@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{# extends означает: "возьми base.html как основу и вставь моё содержимое в блок content" #}
+
+{% block title %}Дашборд — IAS Marketing{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h3">
+            <i class="bi bi-speedometer2 text-primary"></i> Дашборд
+        </h1>
+        <p class="text-muted">Добро пожаловать в систему управления маркетингом</p>
+    </div>
+</div>
+
+<!-- Карточки-счётчики (пока заглушки, данные появятся в Спринте 4) -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card border-primary h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small">Всего лидов</div>
+                        <div class="h3 fw-bold text-primary">—</div>
+                    </div>
+                    <i class="bi bi-people-fill text-primary fs-1 opacity-25"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-success h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small">Конвертировано</div>
+                        <div class="h3 fw-bold text-success">—</div>
+                    </div>
+                    <i class="bi bi-check-circle-fill text-success fs-1 opacity-25"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-warning h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small">Активных кампаний</div>
+                        <div class="h3 fw-bold text-warning">—</div>
+                    </div>
+                    <i class="bi bi-megaphone-fill text-warning fs-1 opacity-25"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-info h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="text-muted small">Средний ROI</div>
+                        <div class="h3 fw-bold text-info">—</div>
+                    </div>
+                    <i class="bi bi-graph-up-arrow text-info fs-1 opacity-25"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Заглушка — появится после Спринта 1 -->
+<div class="card">
+    <div class="card-body text-center py-5 text-muted">
+        <i class="bi bi-hourglass-split fs-1"></i>
+        <p class="mt-2">Данные появятся после настройки базы данных (Спринт 1)</p>
+    </div>
+</div>
+{% endblock %}

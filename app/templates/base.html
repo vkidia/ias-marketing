@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Заголовок страницы: дочерние шаблоны могут его переопределить -->
+    <title>{% block title %}IAS Marketing{% endblock %}</title>
+
+    <!-- Bootstrap 5 — готовые стили, подключаем через CDN (интернет) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons — иконки -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- Наши собственные стили -->
+    <link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet">
+</head>
+<body>
+
+    <!-- ===== НАВИГАЦИОННАЯ ПАНЕЛЬ (ШАПКА) ===== -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            
+            <!-- Логотип / название системы -->
+            <a class="navbar-brand fw-bold" href="{{ url_for('main.index') }}">
+                <i class="bi bi-graph-up-arrow"></i> IAS Marketing
+            </a>
+
+            <!-- Кнопка для мобильных устройств (сворачивает меню) -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <!-- Левая часть меню — основные разделы -->
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.dashboard') }}">
+                            <i class="bi bi-speedometer2"></i> Дашборд
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('campaigns.index') }}">
+                            <i class="bi bi-megaphone"></i> Кампании
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('leads.index') }}">
+                            <i class="bi bi-people"></i> Лиды
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('analytics.index') }}">
+                            <i class="bi bi-bar-chart-line"></i> Аналитика
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- Правая часть меню — пользователь -->
+                <ul class="navbar-nav">
+                    {# current_user — текущий авторизованный пользователь (из Flask-Login) #}
+                    {% if current_user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                <i class="bi bi-person-circle"></i> {{ current_user.username }}
+                                <span class="badge bg-secondary ms-1">{{ current_user.role }}</span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+                                        <i class="bi bi-box-arrow-right"></i> Выйти
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('auth.login') }}">
+                                <i class="bi bi-box-arrow-in-right"></i> Войти
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===== FLASH-СООБЩЕНИЯ (уведомления) ===== -->
+    <!-- Flash — временные сообщения: "Сохранено!", "Ошибка!" и т.д. -->
+    <div class="container-fluid mt-2">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- ===== ОСНОВНОЕ СОДЕРЖИМОЕ СТРАНИЦЫ ===== -->
+    <!-- Каждый дочерний шаблон заменяет этот блок своим содержимым -->
+    <main class="container-fluid py-3">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- ===== ПОДВАЛ ===== -->
+    <footer class="footer mt-auto py-3 bg-light border-top">
+        <div class="container text-center text-muted small">
+            IAS Marketing &copy; 2026 — Информационно-аналитическая система управления маркетингом
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS — нужен для работы dropdown, collapse и других компонентов -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Chart.js — для графиков (понадобится в Спринте 4) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Наш собственный JS -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+
+    <!-- Блок для дополнительных скриптов на конкретных страницах -->
+    {% block scripts %}{% endblock %}
+</body>
+</html>

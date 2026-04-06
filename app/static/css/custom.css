@@ -1,0 +1,27 @@
+/* Минимальная высота страницы — чтобы футер был внизу */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #f8f9fa;
+}
+
+main {
+    flex: 1; /* main занимает всё свободное место, футер прижат вниз */
+}
+
+/* Карточки с небольшой тенью */
+.card {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+}
+
+/* Плавная анимация для уведомлений */
+.alert {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
