@@ -6,11 +6,7 @@ import os
 class BaseConfig:
     """Базовые настройки — общие для всех режимов"""
 
-    # Секретный ключ для шифрования сессий и CSRF-токенов.
-    # В продакшене ОБЯЗАТЕЛЬНО менять на длинную случайную строку.
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-me')
-
-    # Отключаем лишнее логирование от SQLAlchemy
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 
@@ -18,9 +14,6 @@ class DevelopmentConfig(BaseConfig):
     """Режим разработки: DEBUG включён, база данных PostgreSQL"""
 
     DEBUG = True
-
-    # Берём строку подключения из .env файла.
-    # Если .env не задан — используем дефолтную строку подключения.
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         'DATABASE_URL',
         'postgresql://ias_user:ias_password@localhost:5432/ias_marketing'
@@ -39,4 +32,11 @@ class TestingConfig(BaseConfig):
 
     TESTING = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
-    WTF_CSRF_ENABLED = False  # В тестах CSRF не нужен
+    WTF_CSRF_ENABLED = False
+
+
+config_by_name = {
+    'development': DevelopmentConfig,
+    'production':  ProductionConfig,
+    'testing':     TestingConfig,
+}

@@ -1,63 +1,50 @@
-# create_app() — функция-фабрика, которая создаёт и настраивает Flask-приложение.
-
-from flask import Flask, render_template
+from flask import Flask
+from app.config import config_by_name
 from app.extensions import db, migrate, login_manager
 
 
 def create_app(config_name='development'):
-    """
-    Создаёт и возвращает настроенное Flask-приложение.
-    config_name: 'development' | 'production' | 'testing'
-    """
-
     app = Flask(__name__)
+    app.config.from_object(config_by_name[config_name])
 
-    # --- Выбираем конфигурацию по имени ---
-    config_map = {
-        'development': 'app.config.DevelopmentConfig',
-        'production':  'app.config.ProductionConfig',
-        'testing':     'app.config.TestingConfig',
-        'default':     'app.config.DevelopmentConfig',
-    }
-    app.config.from_object(config_map.get(config_name, config_map['default']))
-
-    # --- Подключаем расширения к приложению ---
-    # init_app() "привязывает" расширение к конкретному app
+    # инициализация расширений
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
 
-    # --- Регистрируем blueprints (модули приложения) ---
-    # Blueprint — это "комната" в приложении со своими маршрутами.
-    # url_prefix задаёт начало URL для всех маршрутов модуля.
+    # импортируем модели ДО регистрации blueprints,
+    # чтобы Flask-Migrate их видел
+    with app.app_context():
+        from app.models import User, Campaign, Lead, LeadHistory, LandingPage  # noqa
 
+    # blueprints
     from app.blueprints.main import main_bp
-    app.register_blueprint(main_bp)  # маршруты: /  /dashboard
-
     from app.blueprints.auth import auth_bp
-    app.register_blueprint(auth_bp, url_prefix='/auth')  # /auth/login  /auth/logout
-
     from app.blueprints.campaigns import campaigns_bp
-    app.register_blueprint(campaigns_bp, url_prefix='/campaigns')
-
     from app.blueprints.leads import leads_bp
-    app.register_blueprint(leads_bp, url_prefix='/leads')
-
     from app.blueprints.analytics import analytics_bp
-    app.register_blueprint(analytics_bp, url_prefix='/analytics')
-
     from app.blueprints.api import api_bp
+
+    app.register_blueprint(main_bp)
+    app.register_blueprint(auth_bp, url_prefix='/auth')
+    app.register_blueprint(campaigns_bp, url_prefix='/campaigns')
+    app.register_blueprint(leads_bp, url_prefix='/leads')
+    app.register_blueprint(analytics_bp, url_prefix='/analytics')
     app.register_blueprint(api_bp, url_prefix='/api')
 
-    # --- Обработчики ошибок ---
-    # Если страница не найдена — показываем красивую страницу 404
-    @app.errorhandler(404)
-    def not_found(e):
-        return render_template('errors/404.html'), 404
+    # обработчики ошибок
+    from app.blueprints.errors import register_error_handlers
+    register_error_handlers(app)
 
-    # Если доступ запрещён — показываем страницу 403
-    @app.errorhandler(403)
-    def forbidden(e):
-        return render_template('errors/403.html'), 403
+    # Flask-Login: загрузка пользователя
+    from app.models.user import User
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        return db.session.get(User, int(user_id))
+
+    login_manager.login_view = 'auth.login'
+    login_manager.login_message = 'Войдите в систему для доступа к этой странице.'
+    login_manager.login_message_category = 'warning'
 
     return app
