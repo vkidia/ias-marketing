@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}
+    {% if campaign %}Редактировать кампанию{% else %}Создать кампанию{% endif %} — МаркетПульс
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+
+        <h4 class="card-title mb-4">
+          <i class="bi bi-megaphone text-primary me-2"></i>
+          {% if campaign %}Редактировать: {{ campaign.name }}{% else %}Новая кампания{% endif %}
+        </h4>
+
+        <form method="POST" novalidate>
+          {{ form.hidden_tag() }}
+
+          {# Макрос для текстовых/числовых полей #}
+          {% macro render_field(field, placeholder='') %}
+          <div class="mb-3">
+            {{ field.label(class="form-label") }}
+            {{ field(class="form-control" ~ (" is-invalid" if field.errors else ""), placeholder=placeholder) }}
+            {% for error in field.errors %}
+              <div class="invalid-feedback">{{ error }}</div>
+            {% endfor %}
+          </div>
+          {% endmacro %}
+
+          {# Макрос для select-полей #}
+          {% macro render_select(field) %}
+          <div class="mb-3">
+            {{ field.label(class="form-label") }}
+            {{ field(class="form-select" ~ (" is-invalid" if field.errors else "")) }}
+            {% for error in field.errors %}
+              <div class="invalid-feedback">{{ error }}</div>
+            {% endfor %}
+          </div>
+          {% endmacro %}
+
+          {# Основное #}
+          {{ render_field(form.name, placeholder='Название кампании') }}
+          <div class="mb-3">
+            {{ form.description.label(class="form-label") }}
+            {{ form.description(class="form-control", rows=3, placeholder='Описание кампании (необязательно)') }}
+          </div>
+
+          {# Классификация #}
+          <div class="row">
+            <div class="col-md-4">{{ render_select(form.status) }}</div>
+            <div class="col-md-4">{{ render_select(form.channel) }}</div>
+            <div class="col-md-4">{{ render_select(form.target_audience) }}</div>
+          </div>
+
+          {# Бюджет #}
+          <div class="row">
+            <div class="col-md-6">{{ render_field(form.budget, placeholder='0.00') }}</div>
+            <div class="col-md-6">{{ render_field(form.spent,  placeholder='0.00') }}</div>
+          </div>
+
+          {# Даты #}
+          <div class="row">
+            <div class="col-md-6">{{ render_field(form.start_date) }}</div>
+            <div class="col-md-6">{{ render_field(form.end_date) }}</div>
+          </div>
+
+          {# UTM — коллапсируемый блок #}
+          <div class="mb-3">
+            <a class="text-muted small text-decoration-none" data-bs-toggle="collapse" href="#utmSection" role="button">
+              <i class="bi bi-chevron-down me-1"></i>UTM-параметры
+            </a>
+            <div class="collapse {% if form.utm_source.data or form.utm_medium.data or form.utm_campaign.data %}show{% endif %}"
+                 id="utmSection">
+              <div class="row mt-2">
+                <div class="col-md-4">{{ render_field(form.utm_source,   placeholder='google') }}</div>
+                <div class="col-md-4">{{ render_field(form.utm_medium,   placeholder='cpc') }}</div>
+                <div class="col-md-4">{{ render_field(form.utm_campaign, placeholder='spring_2026') }}</div>
+              </div>
+            </div>
+          </div>
+
+          {# Кнопки #}
+          <div class="d-flex gap-2 mt-3">
+            {{ form.submit(class="btn btn-primary") }}
+            {% if campaign %}
+              <a href="{{ url_for('campaigns.detail', id=campaign.id) }}" class="btn btn-outline-secondary">Отмена</a>
+            {% else %}
+              <a href="{{ url_for('campaigns.index') }}" class="btn btn-outline-secondary">Отмена</a>
+            {% endif %}
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

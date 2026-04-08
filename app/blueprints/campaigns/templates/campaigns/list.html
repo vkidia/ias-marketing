@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% block title %}Кампании — МаркетПульс{% endblock %}
+
+{% block content %}
+{% set status_labels  = {'draft': 'Черновик', 'active': 'Активная', 'paused': 'Приостановлена', 'completed': 'Завершена', 'archived': 'Архив'} %}
+{% set channel_labels = {'email': 'Email', 'social': 'Соцсети', 'search': 'Поиск', 'display': 'Медийная', 'referral': 'Реферальный', 'tender': 'Тендер', 'other': 'Другое'} %}
+{% set badge_colors   = {'draft': 'secondary', 'active': 'success', 'paused': 'warning', 'completed': 'primary', 'archived': 'dark'} %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="mb-0"><i class="bi bi-megaphone text-primary me-2"></i>Кампании</h2>
+  {% if current_user.role in ('admin', 'marketing') %}
+    <a href="{{ url_for('campaigns.create') }}" class="btn btn-primary">
+      <i class="bi bi-plus-circle me-1"></i>Создать кампанию
+    </a>
+  {% endif %}
+</div>
+
+{# Фильтры #}
+<form method="GET" class="row g-2 mb-3">
+  <div class="col-auto">
+    <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+      <option value="">Все статусы</option>
+      {% for s in statuses %}
+        <option value="{{ s }}" {% if s == current_status %}selected{% endif %}>
+          {{ status_labels.get(s, s) }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-auto">
+    <select name="channel" class="form-select form-select-sm" onchange="this.form.submit()">
+      <option value="">Все каналы</option>
+      {% for c in channels %}
+        <option value="{{ c }}" {% if c == current_channel %}selected{% endif %}>
+          {{ channel_labels.get(c, c) }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+  {% if current_status or current_channel %}
+    <div class="col-auto">
+      <a href="{{ url_for('campaigns.index') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-x me-1"></i>Сбросить
+      </a>
+    </div>
+  {% endif %}
+</form>
+
+{# Счётчики по статусам #}
+{% if campaigns %}
+  <div class="mb-3">
+    {% for s in statuses %}
+      {% set cnt = campaigns | selectattr('status', 'equalto', s) | list | count %}
+      {% if cnt %}
+        <span class="badge bg-{{ badge_colors.get(s, 'secondary') }} me-1">
+          {{ status_labels.get(s, s) }}: {{ cnt }}
+        </span>
+      {% endif %}
+    {% endfor %}
+    <span class="text-muted small ms-1">Всего: {{ campaigns | length }}</span>
+  </div>
+{% endif %}
+
+{# Таблица #}
+{% if campaigns %}
+<div class="table-responsive">
+  <table class="table table-hover align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>Название</th>
+        <th>Статус</th>
+        <th>Канал</th>
+        <th>Аудитория</th>
+        <th class="text-center">Лиды</th>
+        <th class="text-end">Бюджет</th>
+        <th class="text-end">Потрачено</th>
+        <th class="text-center">Период</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in campaigns %}
+      <tr>
+        <td>
+          <a href="{{ url_for('campaigns.detail', id=c.id) }}" class="fw-semibold text-decoration-none">
+            {{ c.name }}
+          </a>
+          {% if c.description %}
+            <div class="text-muted small text-truncate" style="max-width:250px">{{ c.description }}</div>
+          {% endif %}
+        </td>
+        <td>
+          <span class="badge bg-{{ badge_colors.get(c.status, 'secondary') }}">
+            {{ status_labels.get(c.status, c.status) }}
+          </span>
+        </td>
+        <td>{{ channel_labels.get(c.channel, c.channel) if c.channel else '—' }}</td>
+        <td>
+          {% if c.target_audience == 'mixed' %}Смешанная
+          {% elif c.target_audience %}{{ c.target_audience.upper() }}
+          {% else %}—{% endif %}
+        </td>
+        <td class="text-center">{{ c.lead_count }}</td>
+        <td class="text-end text-nowrap">{{ '%.0f ₽'|format(c.budget|float) if c.budget else '—' }}</td>
+        <td class="text-end text-nowrap">{{ '%.0f ₽'|format(c.spent|float)  if c.spent  else '—' }}</td>
+        <td class="text-nowrap small text-center">
+          {{ c.start_date.strftime('%d.%m.%Y') if c.start_date else '' }}
+          {% if c.start_date and c.end_date %}–{% endif %}
+          {{ c.end_date.strftime('%d.%m.%Y') if c.end_date else '' }}
+        </td>
+        <td>
+          <a href="{{ url_for('campaigns.detail', id=c.id) }}" class="btn btn-sm btn-outline-primary" title="Открыть">
+            <i class="bi bi-eye"></i>
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <div class="alert alert-info">
+    <i class="bi bi-info-circle me-2"></i>
+    {% if current_status or current_channel %}
+      Кампании с выбранными фильтрами не найдены.
+    {% else %}
+      Кампаний пока нет.
+      {% if current_user.role in ('admin', 'marketing') %}
+        <a href="{{ url_for('campaigns.create') }}">Создать первую кампанию</a>.
+      {% endif %}
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

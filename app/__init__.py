@@ -1,6 +1,6 @@
 from flask import Flask
 from app.config import config_by_name
-from app.extensions import db, migrate, login_manager
+from app.extensions import db, migrate, login_manager, csrf
 
 
 def create_app(config_name='development'):
@@ -11,6 +11,7 @@ def create_app(config_name='development'):
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
+    csrf.init_app(app)
 
     # импортируем модели ДО регистрации blueprints,
     # чтобы Flask-Migrate их видел

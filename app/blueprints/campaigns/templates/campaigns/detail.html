@@ -1,0 +1,228 @@
+{% extends 'base.html' %}
+{% block title %}{{ campaign.name }} — МаркетПульс{% endblock %}
+
+{% block content %}
+{% set status_labels  = {'draft': 'Черновик', 'active': 'Активная', 'paused': 'Приостановлена', 'completed': 'Завершена', 'archived': 'Архив'} %}
+{% set channel_labels = {'email': 'Email', 'social': 'Соцсети', 'search': 'Поиск', 'display': 'Медийная', 'referral': 'Реферальный', 'tender': 'Тендер', 'other': 'Другое'} %}
+{% set badge_colors   = {'draft': 'secondary', 'active': 'success', 'paused': 'warning', 'completed': 'primary', 'archived': 'dark'} %}
+{% set lead_badge_colors = {'new': 'secondary', 'contacted': 'info', 'qualified': 'primary', 'converted': 'success', 'lost': 'danger'} %}
+
+{# Заголовок #}
+<div class="d-flex justify-content-between align-items-start mb-4">
+  <div>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-1">
+        <li class="breadcrumb-item"><a href="{{ url_for('campaigns.index') }}">Кампании</a></li>
+        <li class="breadcrumb-item active">{{ campaign.name }}</li>
+      </ol>
+    </nav>
+    <h2 class="mb-2">{{ campaign.name }}</h2>
+    <span class="badge bg-{{ badge_colors.get(campaign.status, 'secondary') }} me-1">
+      {{ status_labels.get(campaign.status, campaign.status) }}
+    </span>
+    {% if campaign.channel %}
+      <span class="badge bg-info text-dark me-1">
+        {{ channel_labels.get(campaign.channel, campaign.channel) }}
+      </span>
+    {% endif %}
+    {% if campaign.target_audience %}
+      <span class="badge bg-light text-dark border">
+        {% if campaign.target_audience == 'mixed' %}Смешанная
+        {% else %}{{ campaign.target_audience.upper() }}{% endif %}
+      </span>
+    {% endif %}
+  </div>
+  {% if current_user.role in ('admin', 'marketing') %}
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="{{ url_for('campaigns.edit', id=campaign.id) }}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-pencil me-1"></i>Редактировать
+    </a>
+    {% if campaign.status != 'archived' %}
+    <form method="POST" action="{{ url_for('campaigns.archive', id=campaign.id) }}"
+          onsubmit="return confirm('Архивировать кампанию «{{ campaign.name }}»?')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-outline-warning btn-sm">
+        <i class="bi bi-archive me-1"></i>Архивировать
+      </button>
+    </form>
+    {% endif %}
+    {% if campaign.can_delete() %}
+    <form method="POST" action="{{ url_for('campaigns.delete', id=campaign.id) }}"
+          onsubmit="return confirm('Удалить кампанию «{{ campaign.name }}» безвозвратно?')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-outline-danger btn-sm">
+        <i class="bi bi-trash me-1"></i>Удалить
+      </button>
+    </form>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+{# Карточки метрик #}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="card text-center h-100 shadow-sm">
+      <div class="card-body">
+        <div class="fs-3 fw-bold text-primary">{{ campaign.lead_count }}</div>
+        <div class="text-muted small mt-1"><i class="bi bi-people me-1"></i>Лиды</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card text-center h-100 shadow-sm">
+      <div class="card-body">
+        {% if campaign.cpl is not none %}
+          <div class="fs-3 fw-bold text-success">{{ '%.0f'|format(campaign.cpl) }} ₽</div>
+        {% else %}
+          <div class="fs-3 fw-bold text-muted">—</div>
+        {% endif %}
+        <div class="text-muted small mt-1"><i class="bi bi-currency-dollar me-1"></i>CPL (стоимость лида)</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card text-center h-100 shadow-sm">
+      <div class="card-body">
+        <div class="fs-3 fw-bold text-info">{{ campaign.conversion_rate }}%</div>
+        <div class="text-muted small mt-1"><i class="bi bi-graph-up me-1"></i>Конверсия</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card text-center h-100 shadow-sm">
+      <div class="card-body">
+        {% set roi_val = campaign.roi %}
+        {% if roi_val is not none %}
+          <div class="fs-3 fw-bold {{ 'text-success' if roi_val > 0 else 'text-danger' if roi_val < 0 else 'text-muted' }}">
+            {{ '%.1f'|format(roi_val) }}%
+          </div>
+        {% else %}
+          <div class="fs-3 fw-bold text-muted">—</div>
+        {% endif %}
+        <div class="text-muted small mt-1"><i class="bi bi-bar-chart me-1"></i>ROI</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Бюджет и выручка #}
+<div class="card shadow-sm mb-4">
+  <div class="card-body p-0">
+    <div class="row g-0 text-center">
+      <div class="col-md-4 p-3 border-end">
+        <div class="text-muted small mb-1"><i class="bi bi-wallet2 me-1"></i>Бюджет</div>
+        <div class="fw-semibold fs-5">{{ '%.2f ₽'|format(campaign.budget|float) if campaign.budget else '—' }}</div>
+      </div>
+      <div class="col-md-4 p-3 border-end">
+        <div class="text-muted small mb-1"><i class="bi bi-cash-stack me-1"></i>Потрачено</div>
+        <div class="fw-semibold fs-5">{{ '%.2f ₽'|format(campaign.spent|float) if campaign.spent else '—' }}</div>
+      </div>
+      <div class="col-md-4 p-3">
+        <div class="text-muted small mb-1"><i class="bi bi-bag-check me-1"></i>Выручка (сделки)</div>
+        <div class="fw-semibold fs-5 text-success">{{ '%.2f ₽'|format(campaign.revenue|float) }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Описание #}
+{% if campaign.description %}
+  <p class="text-muted mb-4">{{ campaign.description }}</p>
+{% endif %}
+
+{# Период и UTM #}
+{% if campaign.start_date or campaign.end_date or campaign.utm_source or campaign.utm_medium or campaign.utm_campaign %}
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <div class="row g-3">
+      {% if campaign.start_date or campaign.end_date %}
+      <div class="col-md-6">
+        <div class="d-flex align-items-start gap-2">
+          <i class="bi bi-calendar3 text-primary mt-1"></i>
+          <div>
+            <div class="text-muted small">Период</div>
+            <div class="fw-semibold">
+              {{ campaign.start_date.strftime('%d.%m.%Y') if campaign.start_date else '…' }}
+              {% if campaign.start_date and campaign.end_date %} — {% endif %}
+              {{ campaign.end_date.strftime('%d.%m.%Y') if campaign.end_date else '…' }}
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      {% if campaign.utm_source or campaign.utm_medium or campaign.utm_campaign %}
+      <div class="col-md-6">
+        <div class="d-flex align-items-start gap-2">
+          <i class="bi bi-link-45deg text-primary mt-1"></i>
+          <div>
+            <div class="text-muted small">UTM-параметры</div>
+            <div class="mt-1">
+              {% if campaign.utm_source %}
+                <span class="badge bg-light text-dark border me-1">source: {{ campaign.utm_source }}</span>
+              {% endif %}
+              {% if campaign.utm_medium %}
+                <span class="badge bg-light text-dark border me-1">medium: {{ campaign.utm_medium }}</span>
+              {% endif %}
+              {% if campaign.utm_campaign %}
+                <span class="badge bg-light text-dark border">campaign: {{ campaign.utm_campaign }}</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{# Таблица лидов #}
+<div class="d-flex justify-content-between align-items-center mb-2">
+  <h5 class="mb-0"><i class="bi bi-people me-2"></i>Лиды кампании ({{ campaign.lead_count }})</h5>
+</div>
+
+{% if leads %}
+<div class="table-responsive">
+  <table class="table table-sm table-hover align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>#</th>
+        <th>Имя</th>
+        <th>Email</th>
+        <th>Компания</th>
+        <th>Тип</th>
+        <th>Статус</th>
+        <th class="text-center">Скор</th>
+        <th class="text-end">Сумма сделки</th>
+        <th>Создан</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for lead in leads %}
+      <tr>
+        <td class="text-muted small">{{ lead.id }}</td>
+        <td>{{ lead.first_name }} {{ lead.last_name or '' }}</td>
+        <td><a href="mailto:{{ lead.email }}" class="text-decoration-none">{{ lead.email }}</a></td>
+        <td>{{ lead.company or '—' }}</td>
+        <td><span class="badge bg-light text-dark border small">{{ lead.client_type.upper() }}</span></td>
+        <td>
+          <span class="badge bg-{{ lead_badge_colors.get(lead.status, 'secondary') }}">{{ lead.status }}</span>
+        </td>
+        <td class="text-center">
+          <span class="badge bg-secondary">{{ lead.score }}</span>
+        </td>
+        <td class="text-end">{{ '%.0f ₽'|format(lead.deal_amount|float) if lead.deal_amount else '—' }}</td>
+        <td class="text-nowrap small text-muted">
+          {{ lead.created_at.strftime('%d.%m.%Y') if lead.created_at else '' }}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <p class="text-muted"><i class="bi bi-inbox me-1"></i>Лидов пока нет.</p>
+{% endif %}
+
+{% endblock %}
