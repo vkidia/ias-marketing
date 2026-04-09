@@ -1,27 +1,116 @@
-/* Минимальная высота страницы — чтобы футер был внизу */
+/* ── CSS-переменные ──────────────────────────────────────────────── */
+:root {
+  --mp-bg:      #f0f2f5;
+  --mp-surface: #ffffff;
+  --mp-border:  #e0e4ea;
+  --mp-muted:   #6c757d;
+  --mp-radius:  10px;
+  --mp-primary: #0d6efd;
+}
+
+/* ── Страница ────────────────────────────────────────────────────── */
 body {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    background-color: #f8f9fa;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--mp-bg);
 }
 
 main {
-    flex: 1; /* main занимает всё свободное место, футер прижат вниз */
+  flex: 1;
 }
 
-/* Карточки с небольшой тенью */
+/* ── Карточки ────────────────────────────────────────────────────── */
 .card {
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    border-radius: 8px;
+  border: 1px solid var(--mp-border);
+  border-radius: var(--mp-radius);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  background: var(--mp-surface);
 }
 
-/* Плавная анимация для уведомлений */
+.card-header {
+  background: var(--mp-surface);
+  border-bottom: 1px solid var(--mp-border);
+  border-radius: var(--mp-radius) var(--mp-radius) 0 0 !important;
+}
+
+/* ── KPI-карточки ────────────────────────────────────────────────── */
+/*  Используй так: <div class="card kpi-card" style="--kpi: #0d6efd"> */
+.kpi-card {
+  border-top: 3px solid var(--kpi, var(--mp-primary)) !important;
+  border-left: 1px solid var(--mp-border) !important;
+  border-right: 1px solid var(--mp-border) !important;
+  border-bottom: 1px solid var(--mp-border) !important;
+}
+
+.kpi-card .kpi-value {
+  font-size: 1.85rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--kpi, var(--mp-primary));
+}
+
+.kpi-card .kpi-icon {
+  font-size: 2rem;
+  color: var(--kpi, var(--mp-primary));
+  opacity: 0.18;
+}
+
+/* ── Разделители секций ──────────────────────────────────────────── */
+.section-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--mp-muted);
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--mp-border);
+}
+
+/* ── Графики ─────────────────────────────────────────────────────── */
+.chart-wrap {
+  position: relative;
+  min-height: 220px;
+}
+
+.chart-wrap-sm {
+  position: relative;
+  min-height: 200px;
+}
+
+/* ── Collapse-иконка (стрелка для сворачивания) ──────────────────── */
+[data-bs-toggle="collapse"] .collapse-chevron {
+  transition: transform 0.2s ease;
+}
+[data-bs-toggle="collapse"].collapsed .collapse-chevron {
+  transform: rotate(-90deg);
+}
+
+/* ── Flash-уведомления ───────────────────────────────────────────── */
 .alert {
-    animation: fadeIn 0.3s ease-in;
+  animation: slideDown 0.25s ease-out;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to   { opacity: 1; transform: translateY(0); }
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Активная ссылка в navbar ────────────────────────────────────── */
+.navbar-dark .nav-link.active {
+  color: #fff !important;
+  font-weight: 600;
+  position: relative;
+}
+
+.navbar-dark .nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0.5rem;
+  right: 0.5rem;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 2px;
 }

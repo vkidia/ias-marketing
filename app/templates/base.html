@@ -36,22 +36,26 @@
                 <!-- Левая часть меню — основные разделы -->
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('main.dashboard') }}">
+                        <a class="nav-link {% if request.endpoint and request.endpoint.startswith('main.') %}active{% endif %}"
+                           href="{{ url_for('main.dashboard') }}">
                             <i class="bi bi-speedometer2"></i> Дашборд
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('campaigns.index') }}">
+                        <a class="nav-link {% if request.endpoint and request.endpoint.startswith('campaigns.') %}active{% endif %}"
+                           href="{{ url_for('campaigns.index') }}">
                             <i class="bi bi-megaphone"></i> Кампании
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('leads.index') }}">
+                        <a class="nav-link {% if request.endpoint and request.endpoint.startswith('leads.') %}active{% endif %}"
+                           href="{{ url_for('leads.index') }}">
                             <i class="bi bi-people"></i> Лиды
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('analytics.index') }}">
+                        <a class="nav-link {% if request.endpoint and request.endpoint.startswith('analytics.') %}active{% endif %}"
+                           href="{{ url_for('analytics.index') }}">
                             <i class="bi bi-bar-chart-line"></i> Аналитика
                         </a>
                     </li>

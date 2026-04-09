@@ -1,0 +1,400 @@
+{% extends 'base.html' %}
+{% block title %}Аналитика — МаркетПульс{% endblock %}
+
+{% block content %}
+
+{# ── Заголовок ── #}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="mb-0">
+    <i class="bi bi-bar-chart-line text-primary me-2"></i>Аналитика
+  </h2>
+  {% if current_user.role in ('admin', 'marketing') %}
+  <a href="{{ url_for('analytics.export_excel') }}" class="btn btn-success btn-sm">
+    <i class="bi bi-file-earmark-excel me-1"></i>Скачать Excel
+  </a>
+  {% endif %}
+</div>
+
+{# ── KPI карточки ── #}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card kpi-card h-100" style="--kpi: #0d6efd">
+      <div class="card-body d-flex justify-content-between align-items-center py-3">
+        <div>
+          <div class="text-muted small mb-1">Всего лидов</div>
+          <div class="kpi-value">{{ total_leads }}</div>
+        </div>
+        <i class="bi bi-people-fill kpi-icon"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card kpi-card h-100" style="--kpi: #198754">
+      <div class="card-body d-flex justify-content-between align-items-center py-3">
+        <div>
+          <div class="text-muted small mb-1">Конвертировано</div>
+          <div class="kpi-value">{{ converted }}</div>
+          {% if total_leads %}
+            <div class="text-muted small mt-1">
+              {{ '%.1f'|format(converted / total_leads * 100) }}% от всех
+            </div>
+          {% endif %}
+        </div>
+        <i class="bi bi-check-circle-fill kpi-icon"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card kpi-card h-100" style="--kpi: #fd7e14">
+      <div class="card-body d-flex justify-content-between align-items-center py-3">
+        <div>
+          <div class="text-muted small mb-1">Активных кампаний</div>
+          <div class="kpi-value">{{ active_campaigns }}</div>
+        </div>
+        <i class="bi bi-megaphone-fill kpi-icon"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card kpi-card h-100" style="--kpi: #0dcaf0">
+      <div class="card-body d-flex justify-content-between align-items-center py-3">
+        <div>
+          <div class="text-muted small mb-1">Средний ROI</div>
+          <div class="kpi-value">
+            {% if avg_roi is not none %}{{ avg_roi }}%{% else %}—{% endif %}
+          </div>
+        </div>
+        <i class="bi bi-graph-up-arrow kpi-icon"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── Тренды ── #}
+<p class="section-title"><i class="bi bi-activity me-1"></i>Тренды</p>
+<div class="row g-3 mb-4">
+
+  <div class="col-lg-8">
+    <div class="card h-100">
+      <div class="card-header py-2">
+        <span class="fw-semibold">
+          <i class="bi bi-graph-up me-1 text-primary"></i>Динамика лидов (последние 6 месяцев)
+        </span>
+      </div>
+      <div class="card-body chart-wrap">
+        <canvas id="monthlyChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header py-2">
+        <span class="fw-semibold">
+          <i class="bi bi-funnel me-1 text-primary"></i>Воронка лидов
+        </span>
+      </div>
+      <div class="card-body chart-wrap">
+        <canvas id="funnelChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{# ── Сегментация ── #}
+<p class="section-title"><i class="bi bi-diagram-3 me-1"></i>Сегментация</p>
+<div class="row g-3 mb-4">
+
+  <div class="col-md-4 col-lg-3">
+    <div class="card h-100">
+      <div class="card-header py-2">
+        <span class="fw-semibold">
+          <i class="bi bi-pie-chart me-1 text-primary"></i>B2B / B2G
+        </span>
+      </div>
+      <div class="card-body d-flex align-items-center justify-content-center chart-wrap-sm">
+        <canvas id="typeChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4 col-lg-3">
+    <div class="card h-100">
+      <div class="card-header py-2">
+        <span class="fw-semibold">
+          <i class="bi bi-broadcast me-1 text-primary"></i>Каналы привлечения
+        </span>
+      </div>
+      <div class="card-body d-flex align-items-center justify-content-center chart-wrap-sm">
+        {% if channel_labels %}
+          <canvas id="channelChart"></canvas>
+        {% else %}
+          <p class="text-muted small mb-0 text-center">
+            Нет данных — привяжите лиды<br>к кампаниям с каналом.
+          </p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4 col-lg-6">
+    <div class="card h-100">
+      <div class="card-header py-2">
+        <span class="fw-semibold">
+          <i class="bi bi-trophy me-1 text-warning"></i>Топ-5 кампаний по конверсии
+        </span>
+      </div>
+      <div class="card-body p-0">
+        {% if top_campaigns %}
+        <table class="table table-sm table-hover mb-0 small">
+          <thead class="table-light">
+            <tr>
+              <th>Кампания</th>
+              <th class="text-end">Лидов</th>
+              <th class="text-end">Конверсия</th>
+              <th class="text-end">CPL</th>
+              <th class="text-end">ROI</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in top_campaigns %}
+            <tr>
+              <td>
+                <a href="{{ url_for('campaigns.detail', id=c.id) }}"
+                   class="text-decoration-none">{{ c.name }}</a>
+              </td>
+              <td class="text-end">{{ c.lead_count }}</td>
+              <td class="text-end">
+                <span class="badge bg-success">{{ c.conversion_rate }}%</span>
+              </td>
+              <td class="text-end">
+                {% if c.cpl %}{{ '%.0f'|format(c.cpl) }} ₽{% else %}—{% endif %}
+              </td>
+              <td class="text-end">
+                {% if c.roi is not none %}
+                  <span class="text-{{ 'success' if c.roi >= 0 else 'danger' }}">
+                    {{ c.roi }}%
+                  </span>
+                {% else %}—{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+          <p class="text-muted p-3 mb-0 small">Нет кампаний с лидами.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{# ── Все кампании (сворачивается) ── #}
+<div class="card">
+  <div class="card-header py-2 d-flex justify-content-between align-items-center
+              collapsed"
+       role="button"
+       data-bs-toggle="collapse"
+       data-bs-target="#allCampaignsTable"
+       aria-expanded="false"
+       aria-controls="allCampaignsTable"
+       style="cursor: pointer;">
+    <span class="fw-semibold">
+      <i class="bi bi-table me-1 text-primary"></i>Все кампании
+    </span>
+    <span class="d-flex align-items-center gap-2">
+      <span class="text-muted small">{{ all_campaigns | length }} записей</span>
+      <i class="bi bi-chevron-down collapse-chevron"></i>
+    </span>
+  </div>
+  <div class="collapse" id="allCampaignsTable">
+    <div class="card-body p-0">
+      {% if all_campaigns %}
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0 small">
+          <thead class="table-light">
+            <tr>
+              <th>Название</th>
+              <th>Статус</th>
+              <th>Канал</th>
+              <th class="text-end">Бюджет</th>
+              <th class="text-end">Потрачено</th>
+              <th class="text-end">Лидов</th>
+              <th class="text-end">Конверсия</th>
+              <th class="text-end">CPL</th>
+              <th class="text-end">Выручка</th>
+              <th class="text-end">ROI</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% set status_colors = {
+                'draft':'secondary','active':'success','paused':'warning',
+                'completed':'info','archived':'dark'
+            } %}
+            {% set status_labels = {
+                'draft':'Черновик','active':'Активна','paused':'Пауза',
+                'completed':'Завершена','archived':'Архив'
+            } %}
+            {% for c in all_campaigns %}
+            <tr>
+              <td>
+                <a href="{{ url_for('campaigns.detail', id=c.id) }}"
+                   class="text-decoration-none">{{ c.name }}</a>
+              </td>
+              <td>
+                <span class="badge bg-{{ status_colors.get(c.status, 'secondary') }}">
+                  {{ status_labels.get(c.status, c.status) }}
+                </span>
+              </td>
+              <td>{{ c.channel or '—' }}</td>
+              <td class="text-end">
+                {% if c.budget %}{{ '%.0f'|format(c.budget|float) }} ₽{% else %}—{% endif %}
+              </td>
+              <td class="text-end">
+                {% if c.spent %}{{ '%.0f'|format(c.spent|float) }} ₽{% else %}—{% endif %}
+              </td>
+              <td class="text-end">{{ c.lead_count }}</td>
+              <td class="text-end">{{ c.conversion_rate }}%</td>
+              <td class="text-end">
+                {% if c.cpl %}{{ '%.0f'|format(c.cpl) }} ₽{% else %}—{% endif %}
+              </td>
+              <td class="text-end">
+                {% if c.revenue %}{{ '%.0f'|format(c.revenue|float) }} ₽{% else %}—{% endif %}
+              </td>
+              <td class="text-end">
+                {% if c.roi is not none %}
+                  <span class="fw-semibold text-{{ 'success' if c.roi >= 0 else 'danger' }}">
+                    {{ c.roi }}%
+                  </span>
+                {% else %}—{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <p class="text-muted p-3 mb-0">Кампаний пока нет.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  // ── данные из Python ──────────────────────────────────────────
+  const funnel        = {{ funnel | tojson }};
+  const monthlyLabels = {{ monthly_labels | tojson }};
+  const monthlyData   = {{ monthly_data | tojson }};
+  const channelLabels = {{ channel_labels | tojson }};
+  const channelData   = {{ channel_data | tojson }};
+  const b2bCount      = {{ b2b_count }};
+  const b2gCount      = {{ b2g_count }};
+
+  // Единая палитра
+  const P = {
+    blue:   '#0d6efd',
+    green:  '#198754',
+    cyan:   '#0dcaf0',
+    orange: '#fd7e14',
+    purple: '#6610f2',
+    red:    '#dc3545',
+    gray:   '#6c757d',
+    teal:   '#20c997',
+  };
+  const PALETTE = Object.values(P);
+
+  // ── Динамика по месяцам (line) ───────────────────────────────
+  new Chart(document.getElementById('monthlyChart'), {
+    type: 'line',
+    data: {
+      labels: monthlyLabels,
+      datasets: [{
+        label: 'Новых лидов',
+        data: monthlyData,
+        borderColor: P.blue,
+        backgroundColor: 'rgba(13,110,253,0.07)',
+        fill: true,
+        tension: 0.35,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        pointBackgroundColor: P.blue,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+    },
+  });
+
+  // ── Воронка (горизонтальный bar) ─────────────────────────────
+  new Chart(document.getElementById('funnelChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Новый', 'Связались', 'Квалифицирован', 'Конвертирован', 'Потерян'],
+      datasets: [{
+        label: 'Лидов',
+        data: [
+          funnel.new, funnel.contacted, funnel.qualified,
+          funnel.converted, funnel.lost,
+        ],
+        backgroundColor: [P.gray, P.cyan, P.blue, P.green, P.red],
+        borderRadius: 4,
+      }],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } },
+    },
+  });
+
+  // ── B2B / B2G (doughnut) ─────────────────────────────────────
+  new Chart(document.getElementById('typeChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['B2B', 'B2G'],
+      datasets: [{
+        data: [b2bCount, b2gCount],
+        backgroundColor: [P.blue, P.purple],
+        hoverOffset: 4,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom' } },
+    },
+  });
+
+  // ── Каналы (doughnut) ────────────────────────────────────────
+  if (channelLabels.length > 0) {
+    new Chart(document.getElementById('channelChart'), {
+      type: 'doughnut',
+      data: {
+        labels: channelLabels,
+        datasets: [{
+          data: channelData,
+          backgroundColor: PALETTE.slice(0, channelLabels.length),
+          hoverOffset: 4,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom' } },
+      },
+    });
+  }
+})();
+</script>
+{% endblock %}

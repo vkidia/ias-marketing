@@ -1,78 +1,138 @@
 {% extends 'base.html' %}
-{# extends означает: "возьми base.html как основу и вставь моё содержимое в блок content" #}
-
-{% block title %}Дашборд — IAS Marketing{% endblock %}
+{% block title %}Дашборд — МаркетПульс{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col">
-        <h2 class="mb-0">
-            <i class="bi bi-speedometer2 text-primary me-2"></i>Дашборд
-        </h2>
-    </div>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="mb-0">
+    <i class="bi bi-speedometer2 text-primary me-2"></i>Дашборд
+  </h2>
+  <a href="{{ url_for('analytics.index') }}" class="btn btn-outline-primary btn-sm">
+    <i class="bi bi-bar-chart-line me-1"></i>Полная аналитика
+  </a>
 </div>
 
-<!-- Карточки-счётчики (пока заглушки, данные появятся в Спринте 4) -->
+{# KPI карточки #}
 <div class="row g-3 mb-4">
-    <div class="col-md-3">
-        <div class="card border-primary h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="text-muted small">Всего лидов</div>
-                        <div class="h3 fw-bold text-primary">—</div>
-                    </div>
-                    <i class="bi bi-people-fill text-primary fs-1 opacity-25"></i>
-                </div>
-            </div>
+  <div class="col-md-3">
+    <div class="card border-primary h-100">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <div class="text-muted small">Всего лидов</div>
+          <div class="h3 fw-bold text-primary mb-0">{{ total_leads }}</div>
         </div>
+        <i class="bi bi-people-fill text-primary fs-1 opacity-25"></i>
+      </div>
     </div>
-    <div class="col-md-3">
-        <div class="card border-success h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="text-muted small">Сделок закрыто</div>
-                        <div class="h3 fw-bold text-success">—</div>
-                    </div>
-                    <i class="bi bi-check-circle-fill text-success fs-1 opacity-25"></i>
-                </div>
-            </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-success h-100">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <div class="text-muted small">Сделок закрыто</div>
+          <div class="h3 fw-bold text-success mb-0">{{ converted }}</div>
         </div>
+        <i class="bi bi-check-circle-fill text-success fs-1 opacity-25"></i>
+      </div>
     </div>
-    <div class="col-md-3">
-        <div class="card border-warning h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="text-muted small">Активных кампаний</div>
-                        <div class="h3 fw-bold text-warning">—</div>
-                    </div>
-                    <i class="bi bi-megaphone-fill text-warning fs-1 opacity-25"></i>
-                </div>
-            </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-warning h-100">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <div class="text-muted small">Активных кампаний</div>
+          <div class="h3 fw-bold text-warning mb-0">{{ active_campaigns }}</div>
         </div>
+        <i class="bi bi-megaphone-fill text-warning fs-1 opacity-25"></i>
+      </div>
     </div>
-    <div class="col-md-3">
-        <div class="card border-info h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="text-muted small">Средний ROI</div>
-                        <div class="h3 fw-bold text-info">—</div>
-                    </div>
-                    <i class="bi bi-graph-up-arrow text-info fs-1 opacity-25"></i>
-                </div>
-            </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-info h-100">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <div class="text-muted small">Средний ROI</div>
+          <div class="h3 fw-bold text-info mb-0">
+            {% if avg_roi is not none %}{{ avg_roi }}%{% else %}—{% endif %}
+          </div>
         </div>
+        <i class="bi bi-graph-up-arrow text-info fs-1 opacity-25"></i>
+      </div>
     </div>
+  </div>
 </div>
 
-<!-- Заглушка — появится после Спринта 1 -->
-<div class="card">
-    <div class="card-body text-center py-5 text-muted">
-        <i class="bi bi-hourglass-split fs-1"></i>
-        <p class="mt-2">Данные появятся после настройки базы данных (Спринт 1)</p>
+{# Воронка + быстрые ссылки #}
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-header py-2">
+        <span class="fw-semibold">
+          <i class="bi bi-funnel me-1 text-primary"></i>Воронка лидов
+        </span>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0 small">
+          {% set status_labels = {
+              'new':'Новый','contacted':'Связались',
+              'qualified':'Квалифицирован','converted':'Конвертирован','lost':'Потерян'
+          } %}
+          {% set status_colors = {
+              'new':'secondary','contacted':'info',
+              'qualified':'primary','converted':'success','lost':'danger'
+          } %}
+          <tbody>
+            {% for s in ('new','contacted','qualified','converted','lost') %}
+            <tr>
+              <td class="ps-3" style="width:160px">
+                <span class="badge bg-{{ status_colors[s] }}">
+                  {{ status_labels[s] }}
+                </span>
+              </td>
+              <td>
+                <div class="progress" style="height:14px">
+                  {% set cnt = funnel.get(s, 0) %}
+                  {% set pct = (cnt / total_leads * 100) | round(1) if total_leads else 0 %}
+                  <div class="progress-bar bg-{{ status_colors[s] }}"
+                       style="width:{{ pct }}%"></div>
+                </div>
+              </td>
+              <td class="text-end pe-3 fw-semibold" style="width:60px">
+                {{ funnel.get(s, 0) }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card shadow-sm">
+      <div class="card-header py-2">
+        <span class="fw-semibold">
+          <i class="bi bi-lightning me-1 text-primary"></i>Быстрые действия
+        </span>
+      </div>
+      <div class="card-body d-grid gap-2">
+        {% if current_user.role in ('admin', 'marketing', 'sales') %}
+        <a href="{{ url_for('leads.create') }}" class="btn btn-primary btn-sm">
+          <i class="bi bi-plus-circle me-1"></i>Добавить лида
+        </a>
+        {% endif %}
+        {% if current_user.role in ('admin', 'marketing') %}
+        <a href="{{ url_for('campaigns.create') }}" class="btn btn-outline-primary btn-sm">
+          <i class="bi bi-megaphone me-1"></i>Создать кампанию
+        </a>
+        <a href="{{ url_for('leads.import_csv') }}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-upload me-1"></i>Импорт CSV
+        </a>
+        {% endif %}
+        <a href="{{ url_for('analytics.index') }}" class="btn btn-outline-info btn-sm">
+          <i class="bi bi-bar-chart-line me-1"></i>Аналитика
+        </a>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}
