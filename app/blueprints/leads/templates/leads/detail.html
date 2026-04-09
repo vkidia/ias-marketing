@@ -1,0 +1,423 @@
+{% extends 'base.html' %}
+{% block title %}{{ lead.full_name }} — МаркетПульс{% endblock %}
+
+{% block content %}
+{% set status_labels = {
+    'new':       'Новый',
+    'contacted': 'Связались',
+    'qualified': 'Квалифицирован',
+    'converted': 'Конвертирован',
+    'lost':      'Потерян'
+} %}
+{% set status_colors = {
+    'new':       'secondary',
+    'contacted': 'info',
+    'qualified': 'primary',
+    'converted': 'success',
+    'lost':      'danger'
+} %}
+{% set transition_labels = {
+    'contacted': 'Связались',
+    'qualified': 'Квалифицировать',
+    'converted': 'Конвертировать',
+    'lost':      'Потерян'
+} %}
+{% set transition_colors = {
+    'contacted': 'info',
+    'qualified': 'primary',
+    'converted': 'success',
+    'lost':      'danger'
+} %}
+{% set score_color = 'danger' if lead.score <= 30 else 'warning' if lead.score <= 60 else 'info' if lead.score <= 80 else 'success' %}
+
+{# Заголовок #}
+<div class="d-flex justify-content-between align-items-start mb-4">
+  <div>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-1">
+        <li class="breadcrumb-item"><a href="{{ url_for('leads.index') }}">Лиды</a></li>
+        <li class="breadcrumb-item active">{{ lead.full_name }}</li>
+      </ol>
+    </nav>
+    <h2 class="mb-2">{{ lead.full_name }}</h2>
+    <span class="badge bg-{{ status_colors.get(lead.status, 'secondary') }} me-1 fs-6">
+      {{ status_labels.get(lead.status, lead.status) }}
+    </span>
+    <span class="badge bg-light text-dark border me-1">
+      {{ lead.client_type.upper() }}
+    </span>
+    {% if lead.days_in_status > 0 %}
+      <span class="text-muted small ms-1">
+        в статусе {{ lead.days_in_status }} дн.
+      </span>
+    {% endif %}
+  </div>
+  {% if current_user.role in ('admin', 'marketing', 'sales') %}
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="{{ url_for('leads.edit', id=lead.id) }}"
+       class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-pencil me-1"></i>Редактировать
+    </a>
+    {% if current_user.role in ('admin', 'marketing') %}
+    <form method="POST" action="{{ url_for('leads.delete', id=lead.id) }}"
+          onsubmit="return confirm('Удалить лид «{{ lead.full_name }}» безвозвратно?')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-outline-danger btn-sm">
+        <i class="bi bi-trash me-1"></i>Удалить
+      </button>
+    </form>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<div class="row g-4">
+  {# Левая колонка #}
+  <div class="col-lg-8">
+
+    {# Score #}
+    <div class="card shadow-sm mb-3">
+      <div class="card-body py-2">
+        <div class="d-flex align-items-center gap-3">
+          <span class="text-muted small">Lead Score</span>
+          <div class="progress flex-grow-1" style="height:10px">
+            <div class="progress-bar bg-{{ score_color }}"
+                 style="width:{{ lead.score }}%"></div>
+          </div>
+          <span class="fw-bold text-{{ score_color }}">{{ lead.score }}/100</span>
+        </div>
+      </div>
+    </div>
+
+    {# Контактное лицо #}
+    <div class="card shadow-sm mb-3">
+      <div class="card-header py-2">
+        <span class="fw-semibold"><i class="bi bi-person me-1 text-primary"></i>Контактное лицо</span>
+      </div>
+      <div class="card-body">
+        <div class="row g-2">
+          <div class="col-sm-6">
+            <div class="text-muted small">Имя</div>
+            <div>{{ lead.full_name }}</div>
+          </div>
+          {% if lead.position %}
+          <div class="col-sm-6">
+            <div class="text-muted small">Должность</div>
+            <div>{{ lead.position }}</div>
+          </div>
+          {% endif %}
+          <div class="col-sm-6">
+            <div class="text-muted small">Email</div>
+            <div><a href="mailto:{{ lead.email }}">{{ lead.email }}</a></div>
+          </div>
+          {% if lead.phone %}
+          <div class="col-sm-6">
+            <div class="text-muted small">Телефон</div>
+            <div><a href="tel:{{ lead.phone }}">{{ lead.phone }}</a></div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    {# Организация #}
+    <div class="card shadow-sm mb-3">
+      <div class="card-header py-2">
+        <span class="fw-semibold"><i class="bi bi-building me-1 text-primary"></i>Организация</span>
+      </div>
+      <div class="card-body">
+        <div class="row g-2">
+          {% if lead.company %}
+          <div class="col-sm-6">
+            <div class="text-muted small">Название</div>
+            <div>{{ lead.company }}</div>
+          </div>
+          {% endif %}
+          {% if lead.inn %}
+          <div class="col-sm-6">
+            <div class="text-muted small">ИНН</div>
+            <div><code>{{ lead.inn }}</code></div>
+          </div>
+          {% endif %}
+          {% if lead.city %}
+          <div class="col-sm-6">
+            <div class="text-muted small">Город</div>
+            <div>{{ lead.city }}</div>
+          </div>
+          {% endif %}
+          <div class="col-sm-6">
+            <div class="text-muted small">Тип клиента</div>
+            <div>
+              <span class="badge bg-light text-dark border">
+                {{ lead.client_type.upper() }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# ЛПР #}
+    {% if lead.decision_maker_name or lead.decision_maker_position %}
+    <div class="card shadow-sm mb-3">
+      <div class="card-header py-2">
+        <span class="fw-semibold"><i class="bi bi-person-badge me-1 text-warning"></i>Лицо, принимающее решение (ЛПР)</span>
+      </div>
+      <div class="card-body">
+        <div class="row g-2">
+          {% if lead.decision_maker_name %}
+          <div class="col-sm-6">
+            <div class="text-muted small">ФИО</div>
+            <div>{{ lead.decision_maker_name }}</div>
+          </div>
+          {% endif %}
+          {% if lead.decision_maker_position %}
+          <div class="col-sm-6">
+            <div class="text-muted small">Должность</div>
+            <div>{{ lead.decision_maker_position }}</div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {# Заметки #}
+    {% if lead.notes %}
+    <div class="card shadow-sm mb-3">
+      <div class="card-header py-2">
+        <span class="fw-semibold"><i class="bi bi-sticky me-1 text-primary"></i>Заметки</span>
+      </div>
+      <div class="card-body">
+        <p class="mb-0 text-muted" style="white-space:pre-wrap">{{ lead.notes }}</p>
+      </div>
+    </div>
+    {% endif %}
+
+    {# История статусов #}
+    <div class="card shadow-sm">
+      <div class="card-header py-2">
+        <span class="fw-semibold">
+          <i class="bi bi-clock-history me-1 text-primary"></i>
+          История изменений ({{ lead.history | length }})
+        </span>
+      </div>
+      <div class="card-body p-0">
+        {% if lead.history %}
+          <ul class="list-group list-group-flush">
+            {% for h in lead.history %}
+            <li class="list-group-item py-2">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <span class="badge bg-{{ status_colors.get(h.old_status, 'secondary') }} me-1">
+                    {{ status_labels.get(h.old_status, h.old_status) }}
+                  </span>
+                  <i class="bi bi-arrow-right text-muted mx-1"></i>
+                  <span class="badge bg-{{ status_colors.get(h.new_status, 'secondary') }}">
+                    {{ status_labels.get(h.new_status, h.new_status) }}
+                  </span>
+                  {% if h.comment %}
+                    <div class="text-muted small mt-1">{{ h.comment }}</div>
+                  {% endif %}
+                </div>
+                <div class="text-end text-muted small text-nowrap ms-2">
+                  <div>{{ h.created_at.strftime('%d.%m.%Y %H:%M') if h.created_at else '' }}</div>
+                  {% if h.changer %}
+                    <div>{{ h.changer.full_name or h.changer.username }}</div>
+                  {% else %}
+                    <div>—</div>
+                  {% endif %}
+                </div>
+              </div>
+            </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-muted p-3 mb-0">История изменений пуста.</p>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>{# /col-lg-8 #}
+
+  {# Правая колонка — мета-информация #}
+  <div class="col-lg-4">
+
+    {# Смена статуса #}
+    {% set next_statuses = allowed_transitions.get(lead.status, []) %}
+    {% if next_statuses and current_user.role in ('admin', 'marketing', 'sales') %}
+    <div class="card shadow-sm mb-3">
+      <div class="card-header py-2">
+        <span class="fw-semibold"><i class="bi bi-arrow-right-circle me-1 text-primary"></i>Сменить статус</span>
+      </div>
+      <div class="card-body d-grid gap-2">
+        {% for ns in next_statuses %}
+        <button class="btn btn-{{ transition_colors.get(ns, 'secondary') }} btn-sm btn-transition"
+                data-status="{{ ns }}"
+                data-label="{{ status_labels.get(ns, ns) }}">
+          <i class="bi bi-arrow-right me-1"></i>{{ transition_labels.get(ns, ns) }}
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# Кампания #}
+    <div class="card shadow-sm mb-3">
+      <div class="card-header py-2">
+        <span class="fw-semibold"><i class="bi bi-megaphone me-1 text-primary"></i>Кампания</span>
+      </div>
+      <div class="card-body">
+        {% if lead.campaign %}
+          <a href="{{ url_for('campaigns.detail', id=lead.campaign_id) }}"
+             class="text-decoration-none fw-semibold">
+            {{ lead.campaign.name }}
+          </a>
+          <div class="text-muted small mt-1">{{ lead.source or '—' }}</div>
+        {% else %}
+          <span class="text-muted">Прямое обращение</span>
+          {% if lead.source %}
+            <div class="text-muted small">{{ lead.source }}</div>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+
+    {# Ответственный #}
+    <div class="card shadow-sm mb-3">
+      <div class="card-header py-2">
+        <span class="fw-semibold"><i class="bi bi-person-check me-1 text-primary"></i>Ответственный</span>
+      </div>
+      <div class="card-body">
+        {% if lead.assignee %}
+          <div class="fw-semibold">{{ lead.assignee.full_name or lead.assignee.username }}</div>
+          <div class="text-muted small">{{ lead.assignee.role }}</div>
+        {% else %}
+          <span class="text-muted">Не назначен</span>
+        {% endif %}
+      </div>
+    </div>
+
+    {# Сумма сделки #}
+    {% if lead.deal_amount %}
+    <div class="card shadow-sm mb-3">
+      <div class="card-header py-2">
+        <span class="fw-semibold"><i class="bi bi-bag-check me-1 text-success"></i>Сумма сделки</span>
+      </div>
+      <div class="card-body">
+        <div class="fs-5 fw-bold text-success">{{ '%.2f ₽'|format(lead.deal_amount|float) }}</div>
+        {% if lead.converted_at %}
+          <div class="text-muted small">{{ lead.converted_at.strftime('%d.%m.%Y') }}</div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# UTM #}
+    {% if lead.utm_source or lead.utm_medium or lead.utm_campaign %}
+    <div class="card shadow-sm mb-3">
+      <div class="card-header py-2">
+        <span class="fw-semibold"><i class="bi bi-link-45deg me-1 text-primary"></i>UTM-параметры</span>
+      </div>
+      <div class="card-body">
+        {% if lead.utm_source %}
+          <span class="badge bg-light text-dark border me-1">source: {{ lead.utm_source }}</span>
+        {% endif %}
+        {% if lead.utm_medium %}
+          <span class="badge bg-light text-dark border me-1">medium: {{ lead.utm_medium }}</span>
+        {% endif %}
+        {% if lead.utm_campaign %}
+          <span class="badge bg-light text-dark border">campaign: {{ lead.utm_campaign }}</span>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# Даты #}
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="text-muted small">Создан</div>
+        <div class="mb-2">{{ lead.created_at.strftime('%d.%m.%Y %H:%M') if lead.created_at else '—' }}</div>
+        {% if lead.status_changed_at %}
+          <div class="text-muted small">Последняя смена статуса</div>
+          <div>{{ lead.status_changed_at.strftime('%d.%m.%Y %H:%M') }}</div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>{# /col-lg-4 #}
+</div>
+
+{# Modal смены статуса #}
+<div class="modal fade" id="statusModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title">Смена статуса</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted small mb-2">
+          Переход в:
+          <strong id="modal-target-label" class="text-primary"></strong>
+        </p>
+        <textarea class="form-control form-control-sm" id="modal-comment"
+                  rows="2" placeholder="Комментарий (необязательно)"></textarea>
+      </div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-sm btn-secondary"
+                data-bs-dismiss="modal">Отмена</button>
+        <button type="button" class="btn btn-sm btn-primary"
+                id="modal-confirm">Подтвердить</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const CSRF  = '{{ csrf_token() }}';
+  const LEAD_ID = {{ lead.id }};
+  let pendingStatus = null;
+
+  const modal = new bootstrap.Modal(document.getElementById('statusModal'));
+
+  document.querySelectorAll('.btn-transition').forEach(btn => {
+    btn.addEventListener('click', function () {
+      pendingStatus = this.dataset.status;
+      document.getElementById('modal-target-label').textContent = this.dataset.label;
+      document.getElementById('modal-comment').value = '';
+      modal.show();
+    });
+  });
+
+  document.getElementById('modal-confirm').addEventListener('click', function () {
+    const comment = document.getElementById('modal-comment').value.trim() || null;
+    this.disabled = true;
+
+    fetch(`/leads/${LEAD_ID}/status`, {
+      method:  'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken':  CSRF,
+      },
+      body: JSON.stringify({ new_status: pendingStatus, comment }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          window.location.reload();
+        } else {
+          modal.hide();
+          alert('Ошибка: ' + data.error);
+        }
+      })
+      .catch(() => alert('Ошибка соединения'))
+      .finally(() => { this.disabled = false; });
+  });
+})();
+</script>
+{% endblock %}

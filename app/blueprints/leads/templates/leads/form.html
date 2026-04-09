@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+{% block title %}
+  {% if lead %}Редактировать лид{% else %}Новый лид{% endif %} — МаркетПульс
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-9">
+
+    {# Заголовок #}
+    <nav aria-label="breadcrumb" class="mb-2">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('leads.index') }}">Лиды</a></li>
+        {% if lead %}
+          <li class="breadcrumb-item">
+            <a href="{{ url_for('leads.detail', id=lead.id) }}">{{ lead.full_name }}</a>
+          </li>
+          <li class="breadcrumb-item active">Редактировать</li>
+        {% else %}
+          <li class="breadcrumb-item active">Новый лид</li>
+        {% endif %}
+      </ol>
+    </nav>
+
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <h4 class="card-title mb-4">
+          <i class="bi bi-person-plus text-primary me-2"></i>
+          {% if lead %}Редактировать: {{ lead.full_name }}{% else %}Новый лид{% endif %}
+        </h4>
+
+        <form method="POST" novalidate>
+          {{ form.hidden_tag() }}
+
+          {# Макрос для текстовых полей #}
+          {% macro field(f, placeholder='', col='col-md-6') %}
+          <div class="{{ col }} mb-3">
+            {{ f.label(class="form-label") }}
+            {{ f(class="form-control" ~ (" is-invalid" if f.errors else ""),
+                 placeholder=placeholder) }}
+            {% for e in f.errors %}
+              <div class="invalid-feedback">{{ e }}</div>
+            {% endfor %}
+          </div>
+          {% endmacro %}
+
+          {# Макрос для select полей #}
+          {% macro sel(f, col='col-md-6') %}
+          <div class="{{ col }} mb-3">
+            {{ f.label(class="form-label") }}
+            {{ f(class="form-select" ~ (" is-invalid" if f.errors else "")) }}
+            {% for e in f.errors %}
+              <div class="invalid-feedback">{{ e }}</div>
+            {% endfor %}
+          </div>
+          {% endmacro %}
+
+          {# ── Раздел 1: Контактное лицо ── #}
+          <h6 class="text-muted text-uppercase fw-semibold mb-3 border-bottom pb-2"
+              style="font-size:11px;letter-spacing:.06em">
+            <i class="bi bi-person me-1"></i>Контактное лицо
+          </h6>
+          <div class="row">
+            {{ field(form.first_name, placeholder='Иван', col='col-md-4') }}
+            {{ field(form.last_name,  placeholder='Иванов', col='col-md-4') }}
+            {{ field(form.phone,      placeholder='+7 999 000-00-00', col='col-md-4') }}
+          </div>
+          <div class="row">
+            {{ field(form.email,    placeholder='ivan@company.ru', col='col-md-6') }}
+            {{ field(form.position, placeholder='Менеджер по закупкам', col='col-md-6') }}
+          </div>
+
+          {# ── Раздел 2: Организация ── #}
+          <h6 class="text-muted text-uppercase fw-semibold mb-3 border-bottom pb-2 mt-2"
+              style="font-size:11px;letter-spacing:.06em">
+            <i class="bi bi-building me-1"></i>Организация
+          </h6>
+          <div class="row">
+            {{ field(form.company, placeholder='ООО Ромашка', col='col-md-6') }}
+            {{ field(form.city,    placeholder='Казань', col='col-md-3') }}
+            {{ sel(form.client_type, col='col-md-3') }}
+          </div>
+          <div class="row">
+            {{ field(form.inn, placeholder='1234567890', col='col-md-4') }}
+          </div>
+
+          {# ── Раздел 3: ЛПР ── #}
+          <h6 class="text-muted text-uppercase fw-semibold mb-3 border-bottom pb-2 mt-2"
+              style="font-size:11px;letter-spacing:.06em">
+            <i class="bi bi-person-badge me-1"></i>Лицо, принимающее решение (ЛПР)
+          </h6>
+          <div class="row">
+            {{ field(form.decision_maker_name,
+                     placeholder='Смирнова Ольга Владимировна', col='col-md-6') }}
+            {{ field(form.decision_maker_position,
+                     placeholder='Директор', col='col-md-6') }}
+          </div>
+
+          {# ── Раздел 4: Воронка и привязки ── #}
+          <h6 class="text-muted text-uppercase fw-semibold mb-3 border-bottom pb-2 mt-2"
+              style="font-size:11px;letter-spacing:.06em">
+            <i class="bi bi-funnel me-1"></i>Воронка и привязки
+          </h6>
+          <div class="row">
+            {{ sel(form.source,      col='col-md-4') }}
+            {{ sel(form.campaign_id, col='col-md-4') }}
+            {{ sel(form.assigned_to, col='col-md-4') }}
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              {{ form.deal_amount.label(class="form-label") }}
+              <div class="input-group">
+                {{ form.deal_amount(class="form-control" ~ (" is-invalid" if form.deal_amount.errors else ""),
+                                    placeholder='0.00') }}
+                <span class="input-group-text">₽</span>
+                {% for e in form.deal_amount.errors %}
+                  <div class="invalid-feedback">{{ e }}</div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+
+          {# ── UTM — коллапсируемый ── #}
+          <div class="mb-3">
+            <a class="text-muted small text-decoration-none" data-bs-toggle="collapse"
+               href="#utmSection" role="button">
+              <i class="bi bi-chevron-down me-1"></i>UTM-параметры
+            </a>
+            <div class="collapse {% if form.utm_source.data or form.utm_medium.data or form.utm_campaign.data %}show{% endif %}"
+                 id="utmSection">
+              <div class="row mt-2">
+                {{ field(form.utm_source,   placeholder='google',      col='col-md-4') }}
+                {{ field(form.utm_medium,   placeholder='cpc',         col='col-md-4') }}
+                {{ field(form.utm_campaign, placeholder='spring_2026', col='col-md-4') }}
+              </div>
+            </div>
+          </div>
+
+          {# Заметки #}
+          <div class="mb-3">
+            {{ form.notes.label(class="form-label") }}
+            {{ form.notes(class="form-control", rows=3,
+                          placeholder='Заметки по лиду…') }}
+          </div>
+
+          {# Кнопки #}
+          <div class="d-flex gap-2 mt-3">
+            {{ form.submit(class="btn btn-primary") }}
+            {% if lead %}
+              <a href="{{ url_for('leads.detail', id=lead.id) }}"
+                 class="btn btn-outline-secondary">Отмена</a>
+            {% else %}
+              <a href="{{ url_for('leads.index') }}"
+                 class="btn btn-outline-secondary">Отмена</a>
+            {% endif %}
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

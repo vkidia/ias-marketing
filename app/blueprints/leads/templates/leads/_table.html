@@ -1,0 +1,117 @@
+{% set status_labels = {
+    'new':       'Новый',
+    'contacted': 'Связались',
+    'qualified': 'Квалифицирован',
+    'converted': 'Конвертирован',
+    'lost':      'Потерян'
+} %}
+{% set status_colors = {
+    'new':       'secondary',
+    'contacted': 'info',
+    'qualified': 'primary',
+    'converted': 'success',
+    'lost':      'danger'
+} %}
+
+{% if leads %}
+<div class="table-responsive">
+  <table class="table table-hover align-middle" id="leads-table">
+    <thead class="table-light">
+      <tr>
+        <th>#</th>
+        <th>Имя / Организация</th>
+        <th>Email</th>
+        <th>Тип</th>
+        <th>Кампания</th>
+        <th>Статус</th>
+        <th class="text-center" style="width:110px">Score</th>
+        <th>Ответственный</th>
+        <th class="text-muted small">Создан</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for lead in leads %}
+      {% set score_color = 'danger' if lead.score <= 30 else 'warning' if lead.score <= 60 else 'info' if lead.score <= 80 else 'success' %}
+      <tr>
+        <td class="text-muted small">{{ lead.id }}</td>
+        <td>
+          <a href="{{ url_for('leads.detail', id=lead.id) }}"
+             class="fw-semibold text-decoration-none">
+            {{ lead.full_name }}
+          </a>
+          {% if lead.company %}
+            <div class="text-muted small text-truncate" style="max-width:200px">
+              {{ lead.company }}{% if lead.city %}, {{ lead.city }}{% endif %}
+            </div>
+          {% endif %}
+        </td>
+        <td>
+          <a href="mailto:{{ lead.email }}" class="text-decoration-none small">
+            {{ lead.email }}
+          </a>
+        </td>
+        <td>
+          <span class="badge bg-light text-dark border small">
+            {{ lead.client_type.upper() }}
+          </span>
+        </td>
+        <td class="small text-truncate" style="max-width:150px">
+          {% if lead.campaign %}
+            <a href="{{ url_for('campaigns.detail', id=lead.campaign_id) }}"
+               class="text-decoration-none text-muted">
+              {{ lead.campaign.name }}
+            </a>
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+        <td>
+          <span class="badge bg-{{ status_colors.get(lead.status, 'secondary') }}">
+            {{ status_labels.get(lead.status, lead.status) }}
+          </span>
+        </td>
+        <td>
+          <div class="d-flex align-items-center gap-1">
+            <div class="progress flex-grow-1" style="height:6px">
+              <div class="progress-bar bg-{{ score_color }}"
+                   style="width:{{ lead.score }}%"></div>
+            </div>
+            <span class="small text-muted" style="min-width:28px">{{ lead.score }}</span>
+          </div>
+        </td>
+        <td class="small text-muted">
+          {% if lead.assignee %}
+            {{ lead.assignee.full_name or lead.assignee.username }}
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td class="small text-muted text-nowrap">
+          {{ lead.created_at.strftime('%d.%m.%Y') if lead.created_at else '' }}
+        </td>
+        <td>
+          <a href="{{ url_for('leads.detail', id=lead.id) }}"
+             class="btn btn-sm btn-outline-primary" title="Открыть">
+            <i class="bi bi-eye"></i>
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="alert alert-info">
+  <i class="bi bi-info-circle me-2"></i>
+  {% if current_status or current_campaign or current_client_type or search %}
+    Лиды с выбранными фильтрами не найдены.
+    <a href="{{ url_for('leads.index') }}" class="alert-link ms-1">Сбросить фильтры</a>
+  {% else %}
+    Лидов пока нет.
+    {% if current_user.role in ('admin', 'marketing', 'sales') %}
+      <a href="{{ url_for('leads.create') }}" class="alert-link">Добавить первого лида</a>.
+    {% endif %}
+  {% endif %}
+</div>
+{% endif %}

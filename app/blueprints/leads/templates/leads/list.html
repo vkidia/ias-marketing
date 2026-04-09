@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% block title %}Лиды — МаркетПульс{% endblock %}
+
+{% block content %}
+{% set status_labels = {
+    'new':       'Новый',
+    'contacted': 'Связались',
+    'qualified': 'Квалифицирован',
+    'converted': 'Конвертирован',
+    'lost':      'Потерян'
+} %}
+{% set status_colors = {
+    'new':       'secondary',
+    'contacted': 'info',
+    'qualified': 'primary',
+    'converted': 'success',
+    'lost':      'danger'
+} %}
+
+{# Заголовок #}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="mb-0"><i class="bi bi-people text-primary me-2"></i>Лиды</h2>
+  <div class="d-flex gap-2">
+    {% if current_user.role in ('admin', 'marketing') %}
+      <a href="{{ url_for('leads.import_csv') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-upload me-1"></i>Импорт CSV
+      </a>
+    {% endif %}
+    {% if current_user.role in ('admin', 'marketing', 'sales') %}
+      <a href="{{ url_for('leads.create') }}" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-circle me-1"></i>Добавить лида
+      </a>
+    {% endif %}
+  </div>
+</div>
+
+{# Фильтры #}
+<form method="GET" class="row g-2 mb-3 align-items-end">
+  <div class="col-md-3">
+    <input type="text" name="q" value="{{ search }}"
+           class="form-control form-control-sm"
+           placeholder="Поиск по имени, email, компании…">
+  </div>
+  <div class="col-auto">
+    <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+      <option value="">Все статусы</option>
+      {% for s in statuses %}
+        <option value="{{ s }}" {% if s == current_status %}selected{% endif %}>
+          {{ status_labels.get(s, s) }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-auto">
+    <select name="client_type" class="form-select form-select-sm" onchange="this.form.submit()">
+      <option value="">B2B + B2G</option>
+      <option value="b2b" {% if current_client_type == 'b2b' %}selected{% endif %}>B2B</option>
+      <option value="b2g" {% if current_client_type == 'b2g' %}selected{% endif %}>B2G</option>
+    </select>
+  </div>
+  <div class="col-auto">
+    <select name="campaign_id" class="form-select form-select-sm" onchange="this.form.submit()">
+      <option value="">Все кампании</option>
+      {% for c in campaigns %}
+        <option value="{{ c.id }}" {% if current_campaign == c.id|string %}selected{% endif %}>
+          {{ c.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-auto">
+    <button type="submit" class="btn btn-sm btn-outline-primary">
+      <i class="bi bi-search me-1"></i>Найти
+    </button>
+  </div>
+  {% if current_status or current_campaign or current_client_type or search %}
+    <div class="col-auto">
+      <a href="{{ url_for('leads.index') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-x me-1"></i>Сбросить
+      </a>
+    </div>
+  {% endif %}
+</form>
+
+{# Счётчики по статусам (если нет фильтра) #}
+{% if leads %}
+  <div class="mb-3">
+    {% for s in statuses %}
+      {% set cnt = leads | selectattr('status', 'equalto', s) | list | count %}
+      {% if cnt %}
+        <span class="badge bg-{{ status_colors.get(s, 'secondary') }} me-1">
+          {{ status_labels.get(s, s) }}: {{ cnt }}
+        </span>
+      {% endif %}
+    {% endfor %}
+    <span class="text-muted small ms-1">Всего: {{ leads | length }}</span>
+  </div>
+{% endif %}
+
+{# Таблица лидов — партиал #}
+{% include 'leads/_table.html' %}
+
+{% endblock %}

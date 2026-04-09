@@ -145,6 +145,11 @@ class Lead(db.Model):
         return max(0, min(100, int(value or 0)))
 
     @property
+    def full_name(self):
+        parts = [self.first_name, self.last_name]
+        return ' '.join(p for p in parts if p)
+
+    @property
     def days_in_status(self):
         """Сколько дней лид находится в текущем статусе."""
         if self.status_changed_at:
