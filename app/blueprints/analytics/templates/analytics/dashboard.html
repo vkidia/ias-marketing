@@ -17,7 +17,7 @@
 
 {# ── KPI карточки ── #}
 <div class="row g-3 mb-4">
-  <div class="col-6 col-md-3">
+  <div class="col-6 col-md-4">
     <div class="card kpi-card h-100" style="--kpi: #0d6efd">
       <div class="card-body d-flex justify-content-between align-items-center py-3">
         <div>
@@ -28,23 +28,32 @@
       </div>
     </div>
   </div>
-  <div class="col-6 col-md-3">
+  <div class="col-6 col-md-4">
     <div class="card kpi-card h-100" style="--kpi: #198754">
       <div class="card-body d-flex justify-content-between align-items-center py-3">
         <div>
           <div class="text-muted small mb-1">Конвертировано</div>
           <div class="kpi-value">{{ converted }}</div>
-          {% if total_leads %}
-            <div class="text-muted small mt-1">
-              {{ '%.1f'|format(converted / total_leads * 100) }}% от всех
-            </div>
-          {% endif %}
         </div>
         <i class="bi bi-check-circle-fill kpi-icon"></i>
       </div>
     </div>
   </div>
-  <div class="col-6 col-md-3">
+  <div class="col-6 col-md-4">
+    <div class="card kpi-card h-100" style="--kpi: #20c997">
+      <div class="card-body d-flex justify-content-between align-items-center py-3">
+        <div>
+          <div class="text-muted small mb-1">Конверсия</div>
+          <div class="kpi-value">
+            {% if global_cr is not none %}{{ global_cr }}%{% else %}—{% endif %}
+          </div>
+          <div class="text-muted small mt-1">лидов → сделка</div>
+        </div>
+        <i class="bi bi-percent kpi-icon"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4">
     <div class="card kpi-card h-100" style="--kpi: #fd7e14">
       <div class="card-body d-flex justify-content-between align-items-center py-3">
         <div>
@@ -55,7 +64,7 @@
       </div>
     </div>
   </div>
-  <div class="col-6 col-md-3">
+  <div class="col-6 col-md-4">
     <div class="card kpi-card h-100" style="--kpi: #0dcaf0">
       <div class="card-body d-flex justify-content-between align-items-center py-3">
         <div>
@@ -65,6 +74,91 @@
           </div>
         </div>
         <i class="bi bi-graph-up-arrow kpi-icon"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4">
+    <div class="card kpi-card h-100" style="--kpi: #6610f2">
+      <div class="card-body d-flex justify-content-between align-items-center py-3">
+        <div>
+          <div class="text-muted small mb-1">Средний CPL</div>
+          <div class="kpi-value">
+            {% if global_cpl is not none %}{{ global_cpl }} ₽{% else %}—{% endif %}
+          </div>
+          <div class="text-muted small mt-1">стоимость лида</div>
+        </div>
+        <i class="bi bi-currency-dollar kpi-icon"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── DSS-рекомендации ── #}
+{#
+  Определяем «суммарный» уровень: берём наихудший из всех рекомендаций.
+  Порядок серьёзности: danger > warning > info > success
+#}
+{% set _lvl_order = {'danger': 3, 'warning': 2, 'info': 1, 'success': 0} %}
+{% set _max_lvl = namespace(val=0, name='success') %}
+{% for rec in dss %}
+  {% if _lvl_order.get(rec.level, 0) > _max_lvl.val %}
+    {% set _max_lvl.val  = _lvl_order.get(rec.level, 0) %}
+    {% set _max_lvl.name = rec.level %}
+  {% endif %}
+{% endfor %}
+
+{# Цвета заголовка и бейджа по суммарному уровню #}
+{% set _header_map = {
+  'success': ('border-success',  'bg-success',  'bi-check-circle-fill text-success'),
+  'info':    ('border-info',     'bg-info',     'bi-info-circle-fill text-info'),
+  'warning': ('border-warning',  'bg-warning',  'bi-exclamation-circle-fill text-warning'),
+  'danger':  ('border-danger',   'bg-danger',   'bi-exclamation-triangle-fill text-danger'),
+} %}
+{% set _hborder, _hbadge, _hicon = _header_map.get(_max_lvl.name, _header_map['success']) %}
+
+{# Открыт по умолчанию, если есть хоть одна warning или danger #}
+{% set _open = _max_lvl.val >= 2 %}
+
+<div class="card mb-4 border-start border-3 {{ _hborder }}">
+  <div class="card-header py-2 d-flex justify-content-between align-items-center {{ 'collapsed' if not _open }}"
+       role="button"
+       data-bs-toggle="collapse"
+       data-bs-target="#dssPanel"
+       aria-expanded="{{ 'true' if _open else 'false' }}"
+       aria-controls="dssPanel"
+       style="cursor: pointer;">
+    <span class="fw-semibold d-flex align-items-center gap-2">
+      <i class="bi {{ _hicon }}"></i>
+      Рекомендации системы
+    </span>
+    <span class="d-flex align-items-center gap-2">
+      <span class="badge {{ _hbadge }} text-{{ 'dark' if _max_lvl.name == 'warning' else 'white' }} rounded-pill">
+        {{ dss | length }}
+      </span>
+      <i class="bi bi-chevron-down collapse-chevron"></i>
+    </span>
+  </div>
+  <div class="collapse {{ 'show' if _open }}" id="dssPanel">
+    <div class="card-body p-2">
+      <div class="row g-2">
+        {% for rec in dss %}
+        {% set _row_map = {
+          'success': ('border-success',  'text-success-emphasis',  'bg-success-subtle'),
+          'info':    ('border-info',     'text-info-emphasis',     'bg-info-subtle'),
+          'warning': ('border-warning',  'text-warning-emphasis',  'bg-warning-subtle'),
+          'danger':  ('border-danger',   'text-danger-emphasis',   'bg-danger-subtle'),
+        } %}
+        {% set _rborder, _rtext, _rbg = _row_map.get(rec.level, _row_map['info']) %}
+        <div class="col-12 col-md-6">
+          <div class="d-flex align-items-start gap-2 p-2 rounded border-start border-3 {{ _rborder }} {{ _rbg }}">
+            <i class="bi {{ rec.icon }} {{ _rtext }} mt-1 flex-shrink-0"></i>
+            <div>
+              <div class="fw-semibold small {{ _rtext }}">{{ rec.title }}</div>
+              <div class="small text-body-secondary">{{ rec.text }}</div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
       </div>
     </div>
   </div>

@@ -57,6 +57,11 @@ def index():
     roi_values = [c.roi for c in all_campaigns if c.roi is not None]
     avg_roi = round(sum(roi_values) / len(roi_values), 1) if roi_values else None
 
+    # ── Глобальные CPL и Conversion Rate ─────────────────────────
+    total_spent = sum(float(c.spent or 0) for c in all_campaigns)
+    global_cpl = round(total_spent / total_leads) if total_leads else None
+    global_cr  = round(converted / total_leads * 100, 1) if total_leads else None
+
     top_campaigns = sorted(
         [c for c in all_campaigns if c.lead_count > 0],
         key=lambda c: c.conversion_rate,
@@ -101,6 +106,86 @@ def index():
     b2b_count = type_dict.get('b2b', 0)
     b2g_count = type_dict.get('b2g', 0)
 
+    # ── DSS-рекомендации ──────────────────────────────────────────
+    dss = []
+
+    if total_leads == 0:
+        dss.append({
+            'level': 'info', 'icon': 'bi-info-circle',
+            'title': 'Нет лидов в системе',
+            'text':  'Добавьте первые лиды или запустите кампанию для их привлечения.',
+        })
+    else:
+        # Конверсия
+        if global_cr is not None and global_cr < 5:
+            dss.append({
+                'level': 'danger', 'icon': 'bi-exclamation-triangle-fill',
+                'title': f'Критически низкая конверсия — {global_cr}%',
+                'text':  'Менее 5% лидов доходят до сделки. Проверьте качество входящих заявок и скрипты обработки.',
+            })
+        elif global_cr is not None and global_cr < 15:
+            dss.append({
+                'level': 'warning', 'icon': 'bi-exclamation-circle',
+                'title': f'Конверсия ниже нормы — {global_cr}%',
+                'text':  'Для B2B/B2G норма — от 15%. Усильте квалификацию лидов и работу с ЛПР.',
+            })
+
+        # Потерянные лиды
+        lost_pct = round(funnel['lost'] / total_leads * 100, 1)
+        if lost_pct > 40:
+            dss.append({
+                'level': 'warning', 'icon': 'bi-funnel',
+                'title': f'{lost_pct}% лидов теряется',
+                'text':  'Слишком много лидов уходит со статусом «Потерян». Проанализируйте причины отказов.',
+            })
+
+        # Нет B2G лидов
+        if b2g_count == 0:
+            dss.append({
+                'level': 'info', 'icon': 'bi-building',
+                'title': 'Нет B2G лидов',
+                'text':  'Государственный сектор — перспективный канал для IT-компании. Рассмотрите участие в тендерах.',
+            })
+
+    # Нет активных кампаний
+    if active_campaigns == 0:
+        dss.append({
+            'level': 'warning', 'icon': 'bi-megaphone',
+            'title': 'Нет активных кампаний',
+            'text':  'Запустите хотя бы одну кампанию для генерации новых лидов.',
+        })
+
+    # Отрицательный средний ROI
+    if avg_roi is not None and avg_roi < 0:
+        dss.append({
+            'level': 'danger', 'icon': 'bi-graph-down-arrow',
+            'title': f'Средний ROI отрицательный — {avg_roi}%',
+            'text':  'Маркетинговые затраты не окупаются в среднем по всем кампаниям. Пересмотрите бюджеты.',
+        })
+
+    # Активные кампании с убытком (потрачено > 50% бюджета, ROI < 0)
+    bad_campaigns = [
+        c for c in all_campaigns
+        if c.status == 'active'
+        and c.roi is not None and c.roi < 0
+        and c.budget and float(c.spent or 0) > float(c.budget) * 0.5
+    ]
+    if bad_campaigns:
+        names = ', '.join(f'«{c.name}»' for c in bad_campaigns[:3])
+        dss.append({
+            'level': 'warning', 'icon': 'bi-currency-dollar',
+            'title': 'Активные кампании с отрицательным ROI',
+            'text':  f'{names} — уже потрачено более 50% бюджета при убытке. Рассмотрите приостановку.',
+        })
+
+    # Всё хорошо
+    if not dss:
+        dss.append({
+            'level': 'success', 'icon': 'bi-check-circle-fill',
+            'title': 'Всё в норме',
+            'text':  'Ключевые показатели в допустимых пределах. Продолжайте в том же духе!',
+        })
+
     return render_template(
         'analytics/dashboard.html',
         # KPI
@@ -108,6 +193,10 @@ def index():
         converted=converted,
         active_campaigns=active_campaigns,
         avg_roi=avg_roi,
+        global_cpl=global_cpl,
+        global_cr=global_cr,
+        # DSS
+        dss=dss,
         # Воронка
         funnel=funnel,
         # Динамика
