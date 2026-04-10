@@ -7,7 +7,8 @@ class LandingPage(db.Model):
 
     id          = db.Column(db.Integer, primary_key=True)
     name        = db.Column(db.String(200), nullable=False)
-    url         = db.Column(db.String(500), nullable=False)
+    slug        = db.Column(db.String(100), unique=True, nullable=True)
+    url         = db.Column(db.String(500), nullable=True)   # внешний URL (опционально)
     campaign_id = db.Column(
         db.Integer,
         db.ForeignKey('campaigns.id', ondelete='CASCADE'),
@@ -20,6 +21,7 @@ class LandingPage(db.Model):
 
     __table_args__ = (
         Index('ix_landing_pages_campaign_id', 'campaign_id'),
+        Index('ix_landing_pages_slug', 'slug', unique=True),
     )
 
     def __repr__(self):

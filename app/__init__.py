@@ -25,6 +25,7 @@ def create_app(config_name='development'):
     from app.blueprints.leads import leads_bp
     from app.blueprints.analytics import analytics_bp
     from app.blueprints.api import api_bp
+    from app.blueprints.landing import landing_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -32,6 +33,10 @@ def create_app(config_name='development'):
     app.register_blueprint(leads_bp, url_prefix='/leads')
     app.register_blueprint(analytics_bp, url_prefix='/analytics')
     app.register_blueprint(api_bp, url_prefix='/api')
+    app.register_blueprint(landing_bp, url_prefix='/landing')
+
+    # API не требует CSRF — принимает запросы из внешних форм и Postman
+    csrf.exempt(api_bp)
 
     # обработчики ошибок
     from app.blueprints.errors import register_error_handlers

@@ -2,9 +2,10 @@ from flask import render_template, redirect, url_for, flash, request, abort
 from flask_login import login_required, current_user
 
 from app.blueprints.campaigns import campaigns_bp
-from app.blueprints.campaigns.forms import CampaignForm
+from app.blueprints.campaigns.forms import CampaignForm, LandingPageForm
 from app.extensions import db
 from app.models.campaign import Campaign, CAMPAIGN_STATUSES, CAMPAIGN_CHANNELS
+from app.models.landing import LandingPage
 from app.utils.decorators import role_required
 
 
@@ -64,7 +65,13 @@ def create():
 @login_required
 def detail(id):
     campaign = db.session.get(Campaign, id) or abort(404)
-    return render_template('campaigns/detail.html', campaign=campaign, leads=campaign.leads)
+    landing_form = LandingPageForm(prefix='lp')
+    return render_template(
+        'campaigns/detail.html',
+        campaign=campaign,
+        leads=campaign.leads,
+        landing_form=landing_form,
+    )
 
 
 @campaigns_bp.route('/<int:id>/edit', methods=['GET', 'POST'])
@@ -115,3 +122,50 @@ def delete(id):
     db.session.commit()
     flash(f'Кампания «{name}» удалена.', 'success')
     return redirect(url_for('campaigns.index'))
+
+
+# ─── Лендинги ───────────────────────────────────────────────────────────────
+
+@campaigns_bp.route('/<int:id>/landings/create', methods=['POST'])
+@login_required
+@role_required('admin', 'marketing')
+def landing_create(id):
+    campaign = db.session.get(Campaign, id) or abort(404)
+    form = LandingPageForm(prefix='lp')
+    if form.validate_on_submit():
+        slug = form.slug.data.strip().lower()
+        # проверка уникальности slug
+        existing = db.session.scalars(
+            db.select(LandingPage).where(LandingPage.slug == slug)
+        ).first()
+        if existing:
+            flash(f'Slug «{slug}» уже занят другим лендингом.', 'danger')
+            return redirect(url_for('campaigns.detail', id=id))
+        lp = LandingPage(
+            name=form.name.data.strip(),
+            slug=slug,
+            is_active=form.is_active.data,
+            campaign_id=campaign.id,
+        )
+        db.session.add(lp)
+        db.session.commit()
+        flash(f'Лендинг «{lp.name}» создан.', 'success')
+    else:
+        for field, errors in form.errors.items():
+            for err in errors:
+                flash(f'{err}', 'danger')
+    return redirect(url_for('campaigns.detail', id=id))
+
+
+@campaigns_bp.route('/<int:id>/landings/<int:lid>/delete', methods=['POST'])
+@login_required
+@role_required('admin', 'marketing')
+def landing_delete(id, lid):
+    lp = db.session.get(LandingPage, lid) or abort(404)
+    if lp.campaign_id != id:
+        abort(404)
+    name = lp.name
+    db.session.delete(lp)
+    db.session.commit()
+    flash(f'Лендинг «{name}» удалён.', 'success')
+    return redirect(url_for('campaigns.detail', id=id))

@@ -1,5 +1,7 @@
+import re
+
 from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, SelectField, DecimalField, SubmitField
+from wtforms import StringField, TextAreaField, SelectField, DecimalField, SubmitField, BooleanField
 from wtforms.fields import DateField
 from wtforms.validators import DataRequired, Optional, Length, NumberRange, ValidationError
 
@@ -59,3 +61,20 @@ class CampaignForm(FlaskForm):
     def validate_end_date(self, field):
         if field.data and self.start_date.data and field.data < self.start_date.data:
             raise ValidationError('Дата окончания не может быть раньше даты начала')
+
+
+class LandingPageForm(FlaskForm):
+    name = StringField('Название лендинга', validators=[
+        DataRequired(message='Название обязательно'),
+        Length(max=200, message='Не более 200 символов'),
+    ])
+    slug = StringField('Slug (URL)', validators=[
+        DataRequired(message='Slug обязателен'),
+        Length(min=2, max=100, message='От 2 до 100 символов'),
+    ])
+    is_active = BooleanField('Активен', default=True)
+    submit = SubmitField('Создать лендинг')
+
+    def validate_slug(self, field):
+        if not re.match(r'^[a-z0-9-]+$', field.data):
+            raise ValidationError('Только строчные латинские буквы, цифры и дефис')

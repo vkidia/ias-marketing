@@ -200,9 +200,9 @@
     </thead>
     <tbody>
       {% for lead in leads %}
-      <tr>
+      <tr onclick="window.location='{{ url_for('leads.detail', id=lead.id) }}'" style="cursor:pointer">
         <td class="text-muted small">{{ lead.id }}</td>
-        <td>{{ lead.first_name }} {{ lead.last_name or '' }}</td>
+        <td class="fw-semibold">{{ lead.first_name }} {{ lead.last_name or '' }}</td>
         <td><a href="mailto:{{ lead.email }}" class="text-decoration-none">{{ lead.email }}</a></td>
         <td>{{ lead.company or '—' }}</td>
         <td><span class="badge bg-light text-dark border small">{{ lead.client_type.upper() }}</span></td>
@@ -225,4 +225,211 @@
   <p class="text-muted"><i class="bi bi-inbox me-1"></i>Лидов пока нет.</p>
 {% endif %}
 
+{# ─── Лендинги ──────────────────────────────────────────────────────────── #}
+<hr class="my-4">
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="mb-0"><i class="bi bi-window me-2"></i>Лендинги ({{ campaign.landing_pages|length }})</h5>
+  {% if current_user.role in ('admin', 'marketing') %}
+  <button class="btn btn-outline-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#create-landing-form">
+    <i class="bi bi-plus-lg me-1"></i>Создать лендинг
+  </button>
+  {% endif %}
+</div>
+
+{# Форма создания лендинга #}
+{% if current_user.role in ('admin', 'marketing') %}
+<div class="collapse mb-3" id="create-landing-form">
+  <div class="card card-body border-primary border-opacity-25 bg-light">
+    <h6 class="mb-3"><i class="bi bi-plus-circle me-1 text-primary"></i>Новый лендинг</h6>
+    <form method="POST" action="{{ url_for('campaigns.landing_create', id=campaign.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="row g-3">
+        <div class="col-md-6">
+          {{ landing_form.name.label(class='form-label fw-semibold') }}
+          {{ landing_form.name(class='form-control', placeholder='Весна 2026 — Облачные решения') }}
+        </div>
+        <div class="col-md-6">
+          {{ landing_form.slug.label(class='form-label fw-semibold') }}
+          <div class="input-group">
+            <span class="input-group-text text-muted small">/landing/</span>
+            {{ landing_form.slug(class='form-control', placeholder='spring-cloud') }}
+          </div>
+          <div class="form-text">Только строчные буквы, цифры и дефис</div>
+        </div>
+        <div class="col-12 d-flex align-items-center gap-3">
+          <div class="form-check">
+            {{ landing_form.is_active(class='form-check-input') }}
+            {{ landing_form.is_active.label(class='form-check-label') }}
+          </div>
+          {{ landing_form.submit(class='btn btn-primary') }}
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+{# Список лендингов #}
+{% if campaign.landing_pages %}
+<div class="row g-3 mb-2">
+  {% for lp in campaign.landing_pages %}
+  <div class="col-12">
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-3">
+
+        {# Заголовок карточки лендинга #}
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-window text-primary"></i>
+            <span class="fw-semibold">{{ lp.name }}</span>
+            {% if lp.is_active %}
+              <span class="badge bg-success-subtle text-success border border-success-subtle">активен</span>
+            {% else %}
+              <span class="badge bg-secondary-subtle text-secondary border">неактивен</span>
+            {% endif %}
+          </div>
+          {% if current_user.role in ('admin', 'marketing') %}
+          <form method="POST"
+                action="{{ url_for('campaigns.landing_delete', id=campaign.id, lid=lp.id) }}"
+                onsubmit="return confirm('Удалить лендинг «{{ lp.name }}»?')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline-danger btn-sm">
+              <i class="bi bi-trash"></i>
+            </button>
+          </form>
+          {% endif %}
+        </div>
+
+        {# Публичная ссылка #}
+        <div class="input-group input-group-sm mb-3">
+          <span class="input-group-text bg-light"><i class="bi bi-link-45deg"></i></span>
+          <input type="text" class="form-control font-monospace small bg-light"
+                 id="base-url-{{ lp.id }}"
+                 value="{{ request.host_url }}landing/{{ lp.slug }}"
+                 readonly>
+          <a href="{{ url_for('landing.page', slug=lp.slug) }}" target="_blank"
+             class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-box-arrow-up-right"></i>
+          </a>
+          <button class="btn btn-outline-secondary btn-sm"
+                  onclick="copyText('base-url-{{ lp.id }}', this)" type="button">
+            <i class="bi bi-clipboard"></i>
+          </button>
+        </div>
+
+        {# UTM-генератор #}
+        <button class="btn btn-sm btn-outline-primary mb-2"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#utm-gen-{{ lp.id }}">
+          <i class="bi bi-link-45deg me-1"></i>UTM-генератор
+        </button>
+
+        <div class="collapse" id="utm-gen-{{ lp.id }}">
+          <div class="card card-body bg-light border-0 p-3">
+            <div class="row g-2 mb-3">
+              <div class="col-sm-6 col-md-3">
+                <label class="form-label small fw-semibold mb-1">utm_source</label>
+                <input type="text" class="form-control form-control-sm utm-input"
+                       data-lp="{{ lp.id }}" data-param="utm_source"
+                       placeholder="google"
+                       value="{{ campaign.utm_source or '' }}">
+              </div>
+              <div class="col-sm-6 col-md-3">
+                <label class="form-label small fw-semibold mb-1">utm_medium</label>
+                <input type="text" class="form-control form-control-sm utm-input"
+                       data-lp="{{ lp.id }}" data-param="utm_medium"
+                       placeholder="cpc"
+                       value="{{ campaign.utm_medium or '' }}">
+              </div>
+              <div class="col-sm-6 col-md-3">
+                <label class="form-label small fw-semibold mb-1">utm_campaign</label>
+                <input type="text" class="form-control form-control-sm utm-input"
+                       data-lp="{{ lp.id }}" data-param="utm_campaign"
+                       placeholder="spring-2026"
+                       value="{{ campaign.utm_campaign or '' }}">
+              </div>
+              <div class="col-sm-6 col-md-3">
+                <label class="form-label small fw-semibold mb-1">utm_content</label>
+                <input type="text" class="form-control form-control-sm utm-input"
+                       data-lp="{{ lp.id }}" data-param="utm_content"
+                       placeholder="banner-top">
+              </div>
+            </div>
+
+            <label class="form-label small fw-semibold mb-1">
+              <i class="bi bi-link-45deg me-1 text-primary"></i>Готовая ссылка
+            </label>
+            <div class="input-group input-group-sm">
+              <input type="text" class="form-control font-monospace utm-result bg-white"
+                     id="utm-result-{{ lp.id }}"
+                     data-base="{{ request.host_url }}landing/{{ lp.slug }}"
+                     readonly>
+              <button class="btn btn-primary btn-sm"
+                      onclick="copyText('utm-result-{{ lp.id }}', this)" type="button">
+                <i class="bi bi-clipboard me-1"></i>Копировать
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+  <p class="text-muted"><i class="bi bi-window me-1"></i>Лендингов пока нет.</p>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ─── Копирование текста из input ────────────────────────────────────────────
+function copyText(inputId, btn) {
+  const el = document.getElementById(inputId);
+  if (!el || !el.value) return;
+  navigator.clipboard.writeText(el.value).then(function () {
+    const icon = btn.querySelector('i');
+    const prev = icon.className;
+    icon.className = 'bi bi-check-lg text-success';
+    setTimeout(function () { icon.className = prev; }, 1500);
+  });
+}
+
+// ─── UTM-генератор ──────────────────────────────────────────────────────────
+document.querySelectorAll('.utm-input').forEach(function (input) {
+  input.addEventListener('input', rebuildUtmUrl);
+  // инициализируем при загрузке
+  rebuildUtmUrl.call(input);
+});
+
+function rebuildUtmUrl() {
+  const lpId = this.dataset ? this.dataset.lp : null;
+  if (!lpId) return;
+
+  const resultEl = document.getElementById('utm-result-' + lpId);
+  if (!resultEl) return;
+
+  const base = resultEl.dataset.base || '';
+  const params = new URLSearchParams();
+
+  document.querySelectorAll('.utm-input[data-lp="' + lpId + '"]').forEach(function (inp) {
+    if (inp.value.trim()) {
+      params.set(inp.dataset.param, inp.value.trim());
+    }
+  });
+
+  const qs = params.toString();
+  resultEl.value = qs ? base + '?' + qs : base;
+}
+
+// запускаем для каждого lp сразу после загрузки
+document.querySelectorAll('.utm-result').forEach(function (resultEl) {
+  const lpId = resultEl.id.replace('utm-result-', '');
+  const fakeInput = { dataset: { lp: lpId } };
+  rebuildUtmUrl.call(fakeInput);
+});
+</script>
 {% endblock %}
