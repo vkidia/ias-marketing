@@ -26,6 +26,7 @@ def create_app(config_name='development'):
     from app.blueprints.analytics import analytics_bp
     from app.blueprints.api import api_bp
     from app.blueprints.landing import landing_bp
+    from app.blueprints.admin import admin_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -34,6 +35,7 @@ def create_app(config_name='development'):
     app.register_blueprint(analytics_bp, url_prefix='/analytics')
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(landing_bp, url_prefix='/landing')
+    app.register_blueprint(admin_bp, url_prefix='/admin')
 
     # API не требует CSRF — принимает запросы из внешних форм и Postman
     csrf.exempt(api_bp)
@@ -52,5 +54,20 @@ def create_app(config_name='development'):
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Войдите в систему для доступа к этой странице.'
     login_manager.login_message_category = 'warning'
+
+    # контекстный процессор: передаёт кол-во ожидающих одобрения во все шаблоны
+    from flask_login import current_user
+
+    @app.context_processor
+    def inject_pending_count():
+        try:
+            if current_user.is_authenticated and current_user.role == 'admin':
+                count = db.session.scalar(
+                    db.select(db.func.count(User.id)).where(User.is_approved == False)
+                ) or 0
+                return {'pending_count': count}
+        except Exception:
+            pass
+        return {'pending_count': 0}
 
     return app

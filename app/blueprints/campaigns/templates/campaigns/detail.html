@@ -187,7 +187,6 @@
   <table class="table table-sm table-hover align-middle">
     <thead class="table-light">
       <tr>
-        <th>#</th>
         <th>Имя</th>
         <th>Email</th>
         <th>Компания</th>
@@ -201,7 +200,7 @@
     <tbody>
       {% for lead in leads %}
       <tr onclick="window.location='{{ url_for('leads.detail', id=lead.id) }}'" style="cursor:pointer">
-        <td class="text-muted small">{{ lead.id }}</td>
+
         <td class="fw-semibold">{{ lead.first_name }} {{ lead.last_name or '' }}</td>
         <td><a href="mailto:{{ lead.email }}" class="text-decoration-none">{{ lead.email }}</a></td>
         <td>{{ lead.company or '—' }}</td>

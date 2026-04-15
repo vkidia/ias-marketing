@@ -70,6 +70,9 @@ def _apply_form_to_lead(form, lead):
 
 # ─── маршруты ───────────────────────────────────────────────────────────────
 
+PER_PAGE = 20
+
+
 @leads_bp.route('/')
 @login_required
 def index():
@@ -77,6 +80,7 @@ def index():
     campaign_filter    = request.args.get('campaign_id', '')
     client_type_filter = request.args.get('client_type', '')
     search             = request.args.get('q', '').strip()
+    page               = request.args.get('page', 1, type=int)
 
     query = db.select(Lead).order_by(Lead.created_at.desc())
 
@@ -95,12 +99,18 @@ def index():
             Lead.company.ilike(like),
         ))
 
-    leads     = db.session.scalars(query).all()
-    campaigns = db.session.scalars(db.select(Campaign).order_by(Campaign.name)).all()
+    pagination = db.paginate(query, page=page, per_page=PER_PAGE, error_out=False)
+    leads      = pagination.items
+    campaigns  = db.session.scalars(db.select(Campaign).order_by(Campaign.name)).all()
+
+    # Счётчики по статусам для всей выборки (без пагинации)
+    all_leads = db.session.scalars(query).all()
 
     return render_template(
         'leads/list.html',
         leads=leads,
+        all_leads=all_leads,
+        pagination=pagination,
         campaigns=campaigns,
         statuses=LEAD_STATUSES,
         client_types=CLIENT_TYPES,

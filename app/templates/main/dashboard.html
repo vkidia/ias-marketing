@@ -61,6 +61,30 @@
   </div>
 </div>
 
+{# DSS-рекомендации #}
+{% if dss %}
+<div class="card shadow-sm mb-4">
+  <div class="card-header py-2 d-flex align-items-center gap-2">
+    <i class="bi bi-lightbulb text-warning"></i>
+    <span class="fw-semibold">Рекомендации системы</span>
+    <a href="{{ url_for('analytics.index') }}" class="ms-auto text-muted small text-decoration-none">
+      Полная аналитика <i class="bi bi-arrow-right"></i>
+    </a>
+  </div>
+  <div class="card-body py-2 px-3">
+    {% for rec in dss %}
+    <div class="d-flex align-items-start gap-2 py-2 {% if not loop.last %}border-bottom{% endif %}">
+      <i class="bi {{ rec.icon }} text-{{ rec.level }} mt-1 flex-shrink-0"></i>
+      <div>
+        <span class="fw-semibold small">{{ rec.title }}</span>
+        <span class="text-muted small ms-1">— {{ rec.text }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 {# Воронка + быстрые ссылки #}
 <div class="row g-3">
   <div class="col-lg-8">

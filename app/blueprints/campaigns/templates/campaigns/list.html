@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% from 'macros/pagination.html' import render_pagination %}
 {% block title %}Кампании — МаркетПульс{% endblock %}
 
 {% block content %}
@@ -46,18 +47,18 @@
   {% endif %}
 </form>
 
-{# Счётчики по статусам #}
-{% if campaigns %}
+{# Счётчики по статусам — по всей выборке #}
+{% if all_campaigns %}
   <div class="mb-3">
     {% for s in statuses %}
-      {% set cnt = campaigns | selectattr('status', 'equalto', s) | list | count %}
+      {% set cnt = all_campaigns | selectattr('status', 'equalto', s) | list | count %}
       {% if cnt %}
         <span class="badge bg-{{ badge_colors.get(s, 'secondary') }} me-1">
           {{ status_labels.get(s, s) }}: {{ cnt }}
         </span>
       {% endif %}
     {% endfor %}
-    <span class="text-muted small ms-1">Всего: {{ campaigns | length }}</span>
+    <span class="text-muted small ms-1">Всего: {{ all_campaigns | length }}</span>
   </div>
 {% endif %}
 
@@ -131,4 +132,8 @@
     {% endif %}
   </div>
 {% endif %}
+
+{# Пагинация #}
+{{ render_pagination(pagination) }}
+
 {% endblock %}

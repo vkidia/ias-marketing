@@ -17,8 +17,11 @@ def login():
             db.select(User).where(User.username == form.username.data)
         )
         if user and user.check_password(form.password.data):
+            if not user.is_approved:
+                flash('Ваш аккаунт ещё не одобрен администратором.', 'warning')
+                return redirect(url_for('auth.login'))
             if not user.is_active:
-                flash('Аккаунт деактивирован. Обратитесь к администратору.', 'danger')
+                flash('Ваш аккаунт деактивирован. Обратитесь к администратору.', 'danger')
                 return redirect(url_for('auth.login'))
             login_user(user, remember=form.remember_me.data)
             next_page = request.args.get('next')
@@ -45,22 +48,27 @@ def register():
     if form.validate_on_submit():
         # первый пользователь в системе автоматически получает роль admin
         user_count = db.session.scalar(db.select(db.func.count(User.id))) or 0
-        role = 'admin' if user_count == 0 else 'viewer'
-
+        is_first_user = (user_count == 0)
+        role = 'admin' if is_first_user else 'viewer'
         user = User(
             username=form.username.data,
             email=form.email.data,
             full_name=form.full_name.data,
-            role=role
+            role=role,
+            is_active=is_first_user,
+            is_approved=is_first_user,
         )
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
 
-        flash(
-            f'Аккаунт создан! {"Вы первый — вам присвоена роль admin." if role == "admin" else "Роль: viewer. Admin может изменить роль."}',
-            'success'
-        )
+        if is_first_user:
+            flash('Аккаунт создан! Вы первый — вам присвоена роль admin.', 'success')
+        else:
+            flash(
+                'Заявка отправлена. Войти можно будет после того, как администратор одобрит аккаунт.',
+                'info'
+            )
         return redirect(url_for('auth.login'))
 
     return render_template('auth/register.html', form=form)

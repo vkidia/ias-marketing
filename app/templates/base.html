@@ -33,8 +33,9 @@
             </button>
 
             <div class="collapse navbar-collapse" id="navbarNav">
-                <!-- Левая часть меню — основные разделы -->
+                <!-- Левая часть меню — основные разделы (только для авторизованных) -->
                 <ul class="navbar-nav me-auto">
+                    {% if current_user.is_authenticated %}
                     <li class="nav-item">
                         <a class="nav-link {% if request.endpoint and request.endpoint.startswith('main.') %}active{% endif %}"
                            href="{{ url_for('main.dashboard') }}">
@@ -59,6 +60,7 @@
                             <i class="bi bi-bar-chart-line"></i> Аналитика
                         </a>
                     </li>
+                    {% endif %}
                 </ul>
 
                 <!-- Правая часть меню — пользователь -->
@@ -71,6 +73,18 @@
                                 <span class="badge bg-secondary ms-1">{{ current_user.role }}</span>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
+                                {% if current_user.role == 'admin' %}
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center justify-content-between"
+                                       href="{{ url_for('admin.users') }}">
+                                        <span><i class="bi bi-people-fill"></i> Пользователи</span>
+                                        {% if pending_count > 0 %}
+                                        <span class="badge bg-warning text-dark ms-2">{{ pending_count }}</span>
+                                        {% endif %}
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                {% endif %}
                                 <li>
                                     <a class="dropdown-item" href="{{ url_for('auth.logout') }}">
                                         <i class="bi bi-box-arrow-right"></i> Выйти

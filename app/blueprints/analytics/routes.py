@@ -9,6 +9,7 @@ from app.extensions import db
 from app.models.campaign import Campaign
 from app.models.lead import Lead
 from app.utils.decorators import role_required
+from app.utils.dss import compute_dss
 
 RU_MONTHS = {
     1: 'Янв', 2: 'Фев', 3: 'Мар', 4: 'Апр', 5: 'Май', 6: 'Июн',
@@ -107,84 +108,21 @@ def index():
     b2g_count = type_dict.get('b2g', 0)
 
     # ── DSS-рекомендации ──────────────────────────────────────────
-    dss = []
-
-    if total_leads == 0:
-        dss.append({
-            'level': 'info', 'icon': 'bi-info-circle',
-            'title': 'Нет лидов в системе',
-            'text':  'Добавьте первые лиды или запустите кампанию для их привлечения.',
-        })
-    else:
-        # Конверсия
-        if global_cr is not None and global_cr < 5:
-            dss.append({
-                'level': 'danger', 'icon': 'bi-exclamation-triangle-fill',
-                'title': f'Критически низкая конверсия — {global_cr}%',
-                'text':  'Менее 5% лидов доходят до сделки. Проверьте качество входящих заявок и скрипты обработки.',
-            })
-        elif global_cr is not None and global_cr < 15:
-            dss.append({
-                'level': 'warning', 'icon': 'bi-exclamation-circle',
-                'title': f'Конверсия ниже нормы — {global_cr}%',
-                'text':  'Для B2B/B2G норма — от 15%. Усильте квалификацию лидов и работу с ЛПР.',
-            })
-
-        # Потерянные лиды
-        lost_pct = round(funnel['lost'] / total_leads * 100, 1)
-        if lost_pct > 40:
-            dss.append({
-                'level': 'warning', 'icon': 'bi-funnel',
-                'title': f'{lost_pct}% лидов теряется',
-                'text':  'Слишком много лидов уходит со статусом «Потерян». Проанализируйте причины отказов.',
-            })
-
-        # Нет B2G лидов
-        if b2g_count == 0:
-            dss.append({
-                'level': 'info', 'icon': 'bi-building',
-                'title': 'Нет B2G лидов',
-                'text':  'Государственный сектор — перспективный канал для IT-компании. Рассмотрите участие в тендерах.',
-            })
-
-    # Нет активных кампаний
-    if active_campaigns == 0:
-        dss.append({
-            'level': 'warning', 'icon': 'bi-megaphone',
-            'title': 'Нет активных кампаний',
-            'text':  'Запустите хотя бы одну кампанию для генерации новых лидов.',
-        })
-
-    # Отрицательный средний ROI
-    if avg_roi is not None and avg_roi < 0:
-        dss.append({
-            'level': 'danger', 'icon': 'bi-graph-down-arrow',
-            'title': f'Средний ROI отрицательный — {avg_roi}%',
-            'text':  'Маркетинговые затраты не окупаются в среднем по всем кампаниям. Пересмотрите бюджеты.',
-        })
-
-    # Активные кампании с убытком (потрачено > 50% бюджета, ROI < 0)
     bad_campaigns = [
         c for c in all_campaigns
         if c.status == 'active'
         and c.roi is not None and c.roi < 0
         and c.budget and float(c.spent or 0) > float(c.budget) * 0.5
     ]
-    if bad_campaigns:
-        names = ', '.join(f'«{c.name}»' for c in bad_campaigns[:3])
-        dss.append({
-            'level': 'warning', 'icon': 'bi-currency-dollar',
-            'title': 'Активные кампании с отрицательным ROI',
-            'text':  f'{names} — уже потрачено более 50% бюджета при убытке. Рассмотрите приостановку.',
-        })
-
-    # Всё хорошо
-    if not dss:
-        dss.append({
-            'level': 'success', 'icon': 'bi-check-circle-fill',
-            'title': 'Всё в норме',
-            'text':  'Ключевые показатели в допустимых пределах. Продолжайте в том же духе!',
-        })
+    dss = compute_dss(
+        funnel=funnel,
+        total_leads=total_leads,
+        avg_roi=avg_roi,
+        active_campaigns=active_campaigns,
+        global_cr=global_cr,
+        b2g_count=b2g_count,
+        bad_campaigns=bad_campaigns,
+    )
 
     return render_template(
         'analytics/dashboard.html',

@@ -15,7 +15,8 @@ class User(UserMixin, db.Model):
     full_name     = db.Column(db.String(200))
     password_hash = db.Column(db.String(256), nullable=False)
     role          = db.Column(db.String(20),  nullable=False, default='viewer')
-    is_active     = db.Column(db.Boolean, default=True, nullable=False)
+    is_active     = db.Column(db.Boolean, default=True,  nullable=False)
+    is_approved   = db.Column(db.Boolean, default=False, nullable=False, server_default='false')
     created_at    = db.Column(db.DateTime, server_default=db.func.now())
 
     # обратные связи

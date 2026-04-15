@@ -28,7 +28,7 @@
     'converted': 'success',
     'lost':      'danger'
 } %}
-{% set score_color = 'danger' if lead.score <= 30 else 'warning' if lead.score <= 60 else 'info' if lead.score <= 80 else 'success' %}
+{% set score_color = 'danger' if lead.score < 30 else 'warning' if lead.score <= 70 else 'success' %}
 
 {# Заголовок #}
 <div class="d-flex justify-content-between align-items-start mb-4">

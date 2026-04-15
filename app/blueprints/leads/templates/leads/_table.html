@@ -18,7 +18,6 @@
   <table class="table table-hover align-middle" id="leads-table">
     <thead class="table-light">
       <tr>
-        <th>#</th>
         <th>Имя / Организация</th>
         <th>Email</th>
         <th>Тип</th>
@@ -32,9 +31,8 @@
     </thead>
     <tbody>
       {% for lead in leads %}
-      {% set score_color = 'danger' if lead.score <= 30 else 'warning' if lead.score <= 60 else 'info' if lead.score <= 80 else 'success' %}
+      {% set score_color = 'danger' if lead.score < 30 else 'warning' if lead.score <= 70 else 'success' %}
       <tr>
-        <td class="text-muted small">{{ lead.id }}</td>
         <td>
           <a href="{{ url_for('leads.detail', id=lead.id) }}"
              class="fw-semibold text-decoration-none">

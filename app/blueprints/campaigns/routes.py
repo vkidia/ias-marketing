@@ -9,11 +9,15 @@ from app.models.landing import LandingPage
 from app.utils.decorators import role_required
 
 
+PER_PAGE = 10
+
+
 @campaigns_bp.route('/')
 @login_required
 def index():
     status_filter  = request.args.get('status',  '')
     channel_filter = request.args.get('channel', '')
+    page           = request.args.get('page', 1, type=int)
 
     query = db.select(Campaign).order_by(Campaign.created_at.desc())
     if status_filter in CAMPAIGN_STATUSES:
@@ -21,11 +25,15 @@ def index():
     if channel_filter in CAMPAIGN_CHANNELS:
         query = query.where(Campaign.channel == channel_filter)
 
-    campaigns = db.session.scalars(query).all()
+    pagination = db.paginate(query, page=page, per_page=PER_PAGE, error_out=False)
+    campaigns  = pagination.items
+    all_campaigns = db.session.scalars(query).all()
 
     return render_template(
         'campaigns/list.html',
         campaigns=campaigns,
+        all_campaigns=all_campaigns,
+        pagination=pagination,
         statuses=CAMPAIGN_STATUSES,
         channels=CAMPAIGN_CHANNELS,
         current_status=status_filter,
