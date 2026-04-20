@@ -7,12 +7,17 @@
     <!-- Заголовок страницы: дочерние шаблоны могут его переопределить -->
     <title>{% block title %}IAS Marketing{% endblock %}</title>
 
-    <!-- Bootstrap 5 — готовые стили, подключаем через CDN (интернет) -->
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Bootstrap Icons — иконки -->
+
+    <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-    
+
     <!-- Наши собственные стили -->
     <link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet">
 </head>
@@ -20,10 +25,12 @@
 
     <!-- ===== НАВИГАЦИОННАЯ ПАНЕЛЬ (ШАПКА) ===== -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container-fluid">
-            
+        <div class="container-xxl px-3 px-xl-4">
+
             <!-- Логотип / название системы -->
-            <a class="navbar-brand fw-bold" href="{{ url_for('main.index') }}">
+            <a class="navbar-brand d-flex align-items-center gap-2 fw-semibold" href="{{ url_for('main.index') }}">
+                <img src="{{ url_for('static', filename='img/logo-white.svg') }}"
+                     alt="МаркетПульс" width="38" height="38">
                 МаркетПульс
             </a>
 
@@ -32,9 +39,9 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
 
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <!-- Левая часть меню — основные разделы (только для авторизованных) -->
-                <ul class="navbar-nav me-auto">
+            <div class="collapse navbar-collapse" id="navbarNav" style="flex-grow:0">
+                <!-- Левая часть меню – основные разделы (только для авторизованных) -->
+                <ul class="navbar-nav me-auto ms-3">
                     {% if current_user.is_authenticated %}
                     <li class="nav-item">
                         <a class="nav-link {% if request.endpoint and request.endpoint.startswith('main.') %}active{% endif %}"
@@ -63,9 +70,9 @@
                     {% endif %}
                 </ul>
 
-                <!-- Правая часть меню — пользователь -->
+                <!-- Правая часть меню – пользователь -->
                 <ul class="navbar-nav">
-                    {# current_user — текущий авторизованный пользователь (из Flask-Login) #}
+                    {# current_user – текущий авторизованный пользователь (из Flask-Login) #}
                     {% if current_user.is_authenticated %}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
@@ -105,8 +112,8 @@
     </nav>
 
     <!-- ===== FLASH-СООБЩЕНИЯ (уведомления) ===== -->
-    <!-- Flash — временные сообщения: "Сохранено!", "Ошибка!" и т.д. -->
-    <div class="container-fluid mt-2">
+    <!-- Flash – временные сообщения: "Сохранено!", "Ошибка!" и т.д. -->
+    <div class="container-xxl px-3 px-xl-4 mt-2">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
@@ -121,21 +128,21 @@
 
     <!-- ===== ОСНОВНОЕ СОДЕРЖИМОЕ СТРАНИЦЫ ===== -->
     <!-- Каждый дочерний шаблон заменяет этот блок своим содержимым -->
-    <main class="container-fluid py-3">
+    <main class="container-xxl px-3 px-xl-4 py-3">
         {% block content %}{% endblock %}
     </main>
 
     <!-- ===== ПОДВАЛ ===== -->
     <footer class="footer mt-auto py-3 bg-light border-top">
         <div class="container text-center text-muted small">
-            МаркетПульс &copy; 2026 — система управления маркетингом
+            МаркетПульс &copy; 2026 – система управления маркетингом
         </div>
     </footer>
 
-    <!-- Bootstrap JS — нужен для работы dropdown, collapse и других компонентов -->
+    <!-- Bootstrap JS – нужен для работы dropdown, collapse и других компонентов -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Chart.js — для графиков (понадобится в Спринте 4) -->
+    <!-- Chart.js – для графиков (понадобится в Спринте 4) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     
     <!-- Наш собственный JS -->

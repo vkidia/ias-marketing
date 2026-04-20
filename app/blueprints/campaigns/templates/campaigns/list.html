@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% from 'macros/pagination.html' import render_pagination %}
-{% block title %}Кампании — МаркетПульс{% endblock %}
+{% block title %}Кампании – МаркетПульс{% endblock %}
 
 {% block content %}
 {% set status_labels  = {'draft': 'Черновик', 'active': 'Активная', 'paused': 'Приостановлена', 'completed': 'Завершена', 'archived': 'Архив'} %}
@@ -47,7 +47,7 @@
   {% endif %}
 </form>
 
-{# Счётчики по статусам — по всей выборке #}
+{# Счётчики по статусам – по всей выборке #}
 {% if all_campaigns %}
   <div class="mb-3">
     {% for s in statuses %}
@@ -65,7 +65,18 @@
 {# Таблица #}
 {% if campaigns %}
 <div class="table-responsive">
-  <table class="table table-hover align-middle">
+  <table class="table table-hover align-middle" style="table-layout:fixed">
+    <colgroup>
+      <col style="width:28%">
+      <col style="width:110px">
+      <col style="width:100px">
+      <col style="width:100px">
+      <col style="width:60px">
+      <col style="width:100px">
+      <col style="width:100px">
+      <col style="width:160px">
+      <col style="width:44px">
+    </colgroup>
     <thead class="table-light">
       <tr>
         <th>Название</th>
@@ -82,12 +93,12 @@
     <tbody>
       {% for c in campaigns %}
       <tr>
-        <td>
+        <td class="text-truncate">
           <a href="{{ url_for('campaigns.detail', id=c.id) }}" class="fw-semibold text-decoration-none">
             {{ c.name }}
           </a>
           {% if c.description %}
-            <div class="text-muted small text-truncate" style="max-width:250px">{{ c.description }}</div>
+            <div class="text-muted small text-truncate">{{ c.description }}</div>
           {% endif %}
         </td>
         <td>
@@ -95,19 +106,17 @@
             {{ status_labels.get(c.status, c.status) }}
           </span>
         </td>
-        <td>{{ channel_labels.get(c.channel, c.channel) if c.channel else '—' }}</td>
+        <td>{{ channel_labels.get(c.channel, c.channel) if c.channel else '–' }}</td>
         <td>
           {% if c.target_audience == 'mixed' %}Смешанная
           {% elif c.target_audience %}{{ c.target_audience.upper() }}
-          {% else %}—{% endif %}
+          {% else %}–{% endif %}
         </td>
         <td class="text-center">{{ c.lead_count }}</td>
-        <td class="text-end text-nowrap">{{ '%.0f ₽'|format(c.budget|float) if c.budget else '—' }}</td>
-        <td class="text-end text-nowrap">{{ '%.0f ₽'|format(c.spent|float)  if c.spent  else '—' }}</td>
-        <td class="text-nowrap small text-center">
-          {{ c.start_date.strftime('%d.%m.%Y') if c.start_date else '' }}
-          {% if c.start_date and c.end_date %}–{% endif %}
-          {{ c.end_date.strftime('%d.%m.%Y') if c.end_date else '' }}
+        <td class="text-end text-nowrap">{{ '%.0f ₽'|format(c.budget|float) if c.budget else '–' }}</td>
+        <td class="text-end text-nowrap">{{ '%.0f ₽'|format(c.spent|float)  if c.spent  else '–' }}</td>
+        <td class="small text-center text-nowrap">
+          {{ c.start_date.strftime('%d.%m.%Y') if c.start_date else '' }}{% if c.start_date and c.end_date %} – {% endif %}{{ c.end_date.strftime('%d.%m.%Y') if c.end_date else '' }}
         </td>
         <td>
           <a href="{{ url_for('campaigns.detail', id=c.id) }}" class="btn btn-sm btn-outline-primary" title="Открыть">

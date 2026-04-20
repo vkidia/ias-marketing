@@ -8,12 +8,21 @@
   --mp-primary: #0d6efd;
 }
 
-/* ── Страница ────────────────────────────────────────────────────── */
+/* ── Типографика ─────────────────────────────────────────────────── */
 body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 0.9375rem;
+  line-height: 1.6;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   background-color: var(--mp-bg);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 main {
@@ -97,7 +106,16 @@ main {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Активная ссылка в navbar ────────────────────────────────────── */
+/* ── Navbar ──────────────────────────────────────────────────────── */
+.navbar {
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
+}
+
+.navbar-brand img {
+  object-fit: contain;
+}
+
+/* Активная ссылка */
 .navbar-dark .nav-link.active {
   color: #fff !important;
   font-weight: 600;

@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Аналитика — МаркетПульс{% endblock %}
+{% block title %}Аналитика – МаркетПульс{% endblock %}
 
 {% block content %}
 
@@ -45,7 +45,7 @@
         <div>
           <div class="text-muted small mb-1">Конверсия</div>
           <div class="kpi-value">
-            {% if global_cr is not none %}{{ global_cr }}%{% else %}—{% endif %}
+            {% if global_cr is not none %}{{ global_cr }}%{% else %}–{% endif %}
           </div>
           <div class="text-muted small mt-1">лидов → сделка</div>
         </div>
@@ -70,7 +70,7 @@
         <div>
           <div class="text-muted small mb-1">Средний ROI</div>
           <div class="kpi-value">
-            {% if avg_roi is not none %}{{ avg_roi }}%{% else %}—{% endif %}
+            {% if avg_roi is not none %}{{ avg_roi }}%{% else %}–{% endif %}
           </div>
         </div>
         <i class="bi bi-graph-up-arrow kpi-icon"></i>
@@ -83,7 +83,7 @@
         <div>
           <div class="text-muted small mb-1">Средний CPL</div>
           <div class="kpi-value">
-            {% if global_cpl is not none %}{{ global_cpl }} ₽{% else %}—{% endif %}
+            {% if global_cpl is not none %}{{ global_cpl }} ₽{% else %}–{% endif %}
           </div>
           <div class="text-muted small mt-1">стоимость лида</div>
         </div>
@@ -225,7 +225,7 @@
           <canvas id="channelChart"></canvas>
         {% else %}
           <p class="text-muted small mb-0 text-center">
-            Нет данных — привяжите лиды<br>к кампаниям с каналом.
+            Нет данных – привяжите лиды<br>к кампаниям с каналом.
           </p>
         {% endif %}
       </div>
@@ -263,14 +263,14 @@
                 <span class="badge bg-success">{{ c.conversion_rate }}%</span>
               </td>
               <td class="text-end">
-                {% if c.cpl %}{{ '%.0f'|format(c.cpl) }} ₽{% else %}—{% endif %}
+                {% if c.cpl %}{{ '%.0f'|format(c.cpl) }} ₽{% else %}–{% endif %}
               </td>
               <td class="text-end">
                 {% if c.roi is not none %}
                   <span class="text-{{ 'success' if c.roi >= 0 else 'danger' }}">
                     {{ c.roi }}%
                   </span>
-                {% else %}—{% endif %}
+                {% else %}–{% endif %}
               </td>
             </tr>
             {% endfor %}
@@ -342,27 +342,27 @@
                   {{ status_labels.get(c.status, c.status) }}
                 </span>
               </td>
-              <td>{{ c.channel or '—' }}</td>
+              <td>{{ c.channel or '–' }}</td>
               <td class="text-end">
-                {% if c.budget %}{{ '%.0f'|format(c.budget|float) }} ₽{% else %}—{% endif %}
+                {% if c.budget %}{{ '%.0f'|format(c.budget|float) }} ₽{% else %}–{% endif %}
               </td>
               <td class="text-end">
-                {% if c.spent %}{{ '%.0f'|format(c.spent|float) }} ₽{% else %}—{% endif %}
+                {% if c.spent %}{{ '%.0f'|format(c.spent|float) }} ₽{% else %}–{% endif %}
               </td>
               <td class="text-end">{{ c.lead_count }}</td>
               <td class="text-end">{{ c.conversion_rate }}%</td>
               <td class="text-end">
-                {% if c.cpl %}{{ '%.0f'|format(c.cpl) }} ₽{% else %}—{% endif %}
+                {% if c.cpl %}{{ '%.0f'|format(c.cpl) }} ₽{% else %}–{% endif %}
               </td>
               <td class="text-end">
-                {% if c.revenue %}{{ '%.0f'|format(c.revenue|float) }} ₽{% else %}—{% endif %}
+                {% if c.revenue %}{{ '%.0f'|format(c.revenue|float) }} ₽{% else %}–{% endif %}
               </td>
               <td class="text-end">
                 {% if c.roi is not none %}
                   <span class="fw-semibold text-{{ 'success' if c.roi >= 0 else 'danger' }}">
                     {{ c.roi }}%
                   </span>
-                {% else %}—{% endif %}
+                {% else %}–{% endif %}
               </td>
             </tr>
             {% endfor %}

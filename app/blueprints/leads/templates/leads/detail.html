@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}{{ lead.full_name }} — МаркетПульс{% endblock %}
+{% block title %}{{ lead.full_name }} – МаркетПульс{% endblock %}
 
 {% block content %}
 {% set status_labels = {
@@ -225,7 +225,7 @@
                   {% if h.changer %}
                     <div>{{ h.changer.full_name or h.changer.username }}</div>
                   {% else %}
-                    <div>—</div>
+                    <div>–</div>
                   {% endif %}
                 </div>
               </div>
@@ -240,7 +240,7 @@
 
   </div>{# /col-lg-8 #}
 
-  {# Правая колонка — мета-информация #}
+  {# Правая колонка – мета-информация #}
   <div class="col-lg-4">
 
     {# Смена статуса #}
@@ -273,7 +273,7 @@
              class="text-decoration-none fw-semibold">
             {{ lead.campaign.name }}
           </a>
-          <div class="text-muted small mt-1">{{ lead.source or '—' }}</div>
+          <div class="text-muted small mt-1">{{ lead.source or '–' }}</div>
         {% else %}
           <span class="text-muted">Прямое обращение</span>
           {% if lead.source %}
@@ -337,7 +337,7 @@
     <div class="card shadow-sm">
       <div class="card-body">
         <div class="text-muted small">Создан</div>
-        <div class="mb-2">{{ lead.created_at.strftime('%d.%m.%Y %H:%M') if lead.created_at else '—' }}</div>
+        <div class="mb-2">{{ lead.created_at.strftime('%d.%m.%Y %H:%M') if lead.created_at else '–' }}</div>
         {% if lead.status_changed_at %}
           <div class="text-muted small">Последняя смена статуса</div>
           <div>{{ lead.status_changed_at.strftime('%d.%m.%Y %H:%M') }}</div>

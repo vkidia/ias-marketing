@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Дашборд — МаркетПульс{% endblock %}
+{% block title %}Дашборд – МаркетПульс{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -14,48 +14,48 @@
 {# KPI карточки #}
 <div class="row g-3 mb-4">
   <div class="col-md-3">
-    <div class="card border-primary h-100">
-      <div class="card-body d-flex justify-content-between align-items-center">
+    <div class="card kpi-card h-100" style="--kpi: #0d6efd">
+      <div class="card-body d-flex justify-content-between align-items-center py-3">
         <div>
-          <div class="text-muted small">Всего лидов</div>
-          <div class="h3 fw-bold text-primary mb-0">{{ total_leads }}</div>
+          <div class="text-muted small mb-1">Всего лидов</div>
+          <div class="kpi-value">{{ total_leads }}</div>
         </div>
-        <i class="bi bi-people-fill text-primary fs-1 opacity-25"></i>
+        <i class="bi bi-people-fill kpi-icon"></i>
       </div>
     </div>
   </div>
   <div class="col-md-3">
-    <div class="card border-success h-100">
-      <div class="card-body d-flex justify-content-between align-items-center">
+    <div class="card kpi-card h-100" style="--kpi: #198754">
+      <div class="card-body d-flex justify-content-between align-items-center py-3">
         <div>
-          <div class="text-muted small">Сделок закрыто</div>
-          <div class="h3 fw-bold text-success mb-0">{{ converted }}</div>
+          <div class="text-muted small mb-1">Сделок закрыто</div>
+          <div class="kpi-value">{{ converted }}</div>
         </div>
-        <i class="bi bi-check-circle-fill text-success fs-1 opacity-25"></i>
+        <i class="bi bi-check-circle-fill kpi-icon"></i>
       </div>
     </div>
   </div>
   <div class="col-md-3">
-    <div class="card border-warning h-100">
-      <div class="card-body d-flex justify-content-between align-items-center">
+    <div class="card kpi-card h-100" style="--kpi: #fd7e14">
+      <div class="card-body d-flex justify-content-between align-items-center py-3">
         <div>
-          <div class="text-muted small">Активных кампаний</div>
-          <div class="h3 fw-bold text-warning mb-0">{{ active_campaigns }}</div>
+          <div class="text-muted small mb-1">Активных кампаний</div>
+          <div class="kpi-value">{{ active_campaigns }}</div>
         </div>
-        <i class="bi bi-megaphone-fill text-warning fs-1 opacity-25"></i>
+        <i class="bi bi-megaphone-fill kpi-icon"></i>
       </div>
     </div>
   </div>
   <div class="col-md-3">
-    <div class="card border-info h-100">
-      <div class="card-body d-flex justify-content-between align-items-center">
+    <div class="card kpi-card h-100" style="--kpi: #0dcaf0">
+      <div class="card-body d-flex justify-content-between align-items-center py-3">
         <div>
-          <div class="text-muted small">Средний ROI</div>
-          <div class="h3 fw-bold text-info mb-0">
-            {% if avg_roi is not none %}{{ avg_roi }}%{% else %}—{% endif %}
+          <div class="text-muted small mb-1">Средний ROI</div>
+          <div class="kpi-value">
+            {% if avg_roi is not none %}{{ avg_roi }}%{% else %}–{% endif %}
           </div>
         </div>
-        <i class="bi bi-graph-up-arrow text-info fs-1 opacity-25"></i>
+        <i class="bi bi-graph-up-arrow kpi-icon"></i>
       </div>
     </div>
   </div>
@@ -63,24 +63,50 @@
 
 {# DSS-рекомендации #}
 {% if dss %}
-<div class="card shadow-sm mb-4">
+{% set _lvl_order = {'danger': 3, 'warning': 2, 'info': 1, 'success': 0} %}
+{% set _max = namespace(val=0, name='success') %}
+{% for rec in dss %}
+  {% if _lvl_order.get(rec.level, 0) > _max.val %}
+    {% set _max.val  = _lvl_order.get(rec.level, 0) %}
+    {% set _max.name = rec.level %}
+  {% endif %}
+{% endfor %}
+{% set _header_map = {
+  'success': ('border-success', 'bi-check-circle-fill text-success'),
+  'info':    ('border-info',    'bi-info-circle-fill text-info'),
+  'warning': ('border-warning', 'bi-exclamation-circle-fill text-warning'),
+  'danger':  ('border-danger',  'bi-exclamation-triangle-fill text-danger'),
+} %}
+{% set _hborder, _hicon = _header_map.get(_max.name, _header_map['success']) %}
+<div class="card mb-4 border-start border-3 {{ _hborder }}">
   <div class="card-header py-2 d-flex align-items-center gap-2">
-    <i class="bi bi-lightbulb text-warning"></i>
+    <i class="bi {{ _hicon }}"></i>
     <span class="fw-semibold">Рекомендации системы</span>
     <a href="{{ url_for('analytics.index') }}" class="ms-auto text-muted small text-decoration-none">
       Полная аналитика <i class="bi bi-arrow-right"></i>
     </a>
   </div>
-  <div class="card-body py-2 px-3">
-    {% for rec in dss %}
-    <div class="d-flex align-items-start gap-2 py-2 {% if not loop.last %}border-bottom{% endif %}">
-      <i class="bi {{ rec.icon }} text-{{ rec.level }} mt-1 flex-shrink-0"></i>
-      <div>
-        <span class="fw-semibold small">{{ rec.title }}</span>
-        <span class="text-muted small ms-1">— {{ rec.text }}</span>
+  <div class="card-body p-2">
+    <div class="row g-2">
+      {% set _row_map = {
+        'success': ('border-success', 'text-success-emphasis', 'bg-success-subtle'),
+        'info':    ('border-info',    'text-info-emphasis',    'bg-info-subtle'),
+        'warning': ('border-warning', 'text-warning-emphasis', 'bg-warning-subtle'),
+        'danger':  ('border-danger',  'text-danger-emphasis',  'bg-danger-subtle'),
+      } %}
+      {% for rec in dss %}
+      {% set _rb, _rt, _rbg = _row_map.get(rec.level, _row_map['info']) %}
+      <div class="col-12 col-md-6">
+        <div class="d-flex align-items-start gap-2 p-2 rounded border-start border-3 {{ _rb }} {{ _rbg }}">
+          <i class="bi {{ rec.icon }} {{ _rt }} mt-1 flex-shrink-0"></i>
+          <div>
+            <div class="fw-semibold small {{ _rt }}">{{ rec.title }}</div>
+            <div class="small text-body-secondary">{{ rec.text }}</div>
+          </div>
+        </div>
       </div>
+      {% endfor %}
     </div>
-    {% endfor %}
   </div>
 </div>
 {% endif %}

@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% from 'macros/pagination.html' import render_pagination %}
-{% block title %}Лиды — МаркетПульс{% endblock %}
+{% block title %}Лиды – МаркетПульс{% endblock %}
 
 {% block content %}
 {% set status_labels = {
@@ -83,7 +83,7 @@
   {% endif %}
 </form>
 
-{# Счётчики по статусам — по всей выборке, не только текущей странице #}
+{# Счётчики по статусам – по всей выборке, не только текущей странице #}
 {% if all_leads %}
   <div class="mb-3">
     {% for s in statuses %}
@@ -98,7 +98,7 @@
   </div>
 {% endif %}
 
-{# Таблица лидов — партиал #}
+{# Таблица лидов – партиал #}
 {% include 'leads/_table.html' %}
 
 {# Пагинация #}

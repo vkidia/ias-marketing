@@ -15,7 +15,18 @@
 
 {% if leads %}
 <div class="table-responsive">
-  <table class="table table-hover align-middle" id="leads-table">
+  <table class="table table-hover align-middle" id="leads-table" style="table-layout:fixed">
+    <colgroup>
+      <col style="width:22%">
+      <col style="width:18%">
+      <col style="width:55px">
+      <col style="width:18%">
+      <col style="width:120px">
+      <col style="width:110px">
+      <col style="width:120px">
+      <col style="width:90px">
+      <col style="width:44px">
+    </colgroup>
     <thead class="table-light">
       <tr>
         <th>Имя / Организация</th>
@@ -23,7 +34,7 @@
         <th>Тип</th>
         <th>Кампания</th>
         <th>Статус</th>
-        <th class="text-center" style="width:110px">Score</th>
+        <th class="text-center">Score</th>
         <th>Ответственный</th>
         <th class="text-muted small">Создан</th>
         <th></th>
@@ -44,7 +55,7 @@
             </div>
           {% endif %}
         </td>
-        <td>
+        <td class="text-truncate">
           <a href="mailto:{{ lead.email }}" class="text-decoration-none small">
             {{ lead.email }}
           </a>
@@ -54,14 +65,14 @@
             {{ lead.client_type.upper() }}
           </span>
         </td>
-        <td class="small text-truncate" style="max-width:150px">
+        <td class="small text-truncate">
           {% if lead.campaign %}
             <a href="{{ url_for('campaigns.detail', id=lead.campaign_id) }}"
                class="text-decoration-none text-muted">
               {{ lead.campaign.name }}
             </a>
           {% else %}
-            <span class="text-muted">—</span>
+            <span class="text-muted">–</span>
           {% endif %}
         </td>
         <td>
@@ -82,7 +93,7 @@
           {% if lead.assignee %}
             {{ lead.assignee.full_name or lead.assignee.username }}
           {% else %}
-            —
+            –
           {% endif %}
         </td>
         <td class="small text-muted text-nowrap">

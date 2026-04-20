@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}
-    {% if campaign %}Редактировать кампанию{% else %}Создать кампанию{% endif %} — МаркетПульс
+    {% if campaign %}Редактировать кампанию{% else %}Создать кампанию{% endif %} – МаркетПульс
 {% endblock %}
 
 {% block content %}
@@ -65,7 +65,7 @@
             <div class="col-md-6">{{ render_field(form.end_date) }}</div>
           </div>
 
-          {# UTM — коллапсируемый блок #}
+          {# UTM – коллапсируемый блок #}
           <div class="mb-3">
             <a class="text-muted small text-decoration-none" data-bs-toggle="collapse" href="#utmSection" role="button">
               <i class="bi bi-chevron-down me-1"></i>UTM-параметры

@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}{{ campaign.name }} — МаркетПульс{% endblock %}
+{% block title %}{{ campaign.name }} – МаркетПульс{% endblock %}
 
 {% block content %}
 {% set status_labels  = {'draft': 'Черновик', 'active': 'Активная', 'paused': 'Приостановлена', 'completed': 'Завершена', 'archived': 'Архив'} %}
@@ -75,7 +75,7 @@
         {% if campaign.cpl is not none %}
           <div class="fs-3 fw-bold text-success">{{ '%.0f'|format(campaign.cpl) }} ₽</div>
         {% else %}
-          <div class="fs-3 fw-bold text-muted">—</div>
+          <div class="fs-3 fw-bold text-muted">–</div>
         {% endif %}
         <div class="text-muted small mt-1"><i class="bi bi-currency-dollar me-1"></i>CPL (стоимость лида)</div>
       </div>
@@ -98,7 +98,7 @@
             {{ '%.1f'|format(roi_val) }}%
           </div>
         {% else %}
-          <div class="fs-3 fw-bold text-muted">—</div>
+          <div class="fs-3 fw-bold text-muted">–</div>
         {% endif %}
         <div class="text-muted small mt-1"><i class="bi bi-bar-chart me-1"></i>ROI</div>
       </div>
@@ -112,11 +112,11 @@
     <div class="row g-0 text-center">
       <div class="col-md-4 p-3 border-end">
         <div class="text-muted small mb-1"><i class="bi bi-wallet2 me-1"></i>Бюджет</div>
-        <div class="fw-semibold fs-5">{{ '%.2f ₽'|format(campaign.budget|float) if campaign.budget else '—' }}</div>
+        <div class="fw-semibold fs-5">{{ '%.2f ₽'|format(campaign.budget|float) if campaign.budget else '–' }}</div>
       </div>
       <div class="col-md-4 p-3 border-end">
         <div class="text-muted small mb-1"><i class="bi bi-cash-stack me-1"></i>Потрачено</div>
-        <div class="fw-semibold fs-5">{{ '%.2f ₽'|format(campaign.spent|float) if campaign.spent else '—' }}</div>
+        <div class="fw-semibold fs-5">{{ '%.2f ₽'|format(campaign.spent|float) if campaign.spent else '–' }}</div>
       </div>
       <div class="col-md-4 p-3">
         <div class="text-muted small mb-1"><i class="bi bi-bag-check me-1"></i>Выручка (сделки)</div>
@@ -144,7 +144,7 @@
             <div class="text-muted small">Период</div>
             <div class="fw-semibold">
               {{ campaign.start_date.strftime('%d.%m.%Y') if campaign.start_date else '…' }}
-              {% if campaign.start_date and campaign.end_date %} — {% endif %}
+              {% if campaign.start_date and campaign.end_date %} – {% endif %}
               {{ campaign.end_date.strftime('%d.%m.%Y') if campaign.end_date else '…' }}
             </div>
           </div>
@@ -203,7 +203,7 @@
 
         <td class="fw-semibold">{{ lead.first_name }} {{ lead.last_name or '' }}</td>
         <td><a href="mailto:{{ lead.email }}" class="text-decoration-none">{{ lead.email }}</a></td>
-        <td>{{ lead.company or '—' }}</td>
+        <td>{{ lead.company or '–' }}</td>
         <td><span class="badge bg-light text-dark border small">{{ lead.client_type.upper() }}</span></td>
         <td>
           <span class="badge bg-{{ lead_badge_colors.get(lead.status, 'secondary') }}">{{ lead.status }}</span>
@@ -211,7 +211,7 @@
         <td class="text-center">
           <span class="badge bg-secondary">{{ lead.score }}</span>
         </td>
-        <td class="text-end">{{ '%.0f ₽'|format(lead.deal_amount|float) if lead.deal_amount else '—' }}</td>
+        <td class="text-end">{{ '%.0f ₽'|format(lead.deal_amount|float) if lead.deal_amount else '–' }}</td>
         <td class="text-nowrap small text-muted">
           {{ lead.created_at.strftime('%d.%m.%Y') if lead.created_at else '' }}
         </td>
@@ -245,7 +245,8 @@
       <div class="row g-3">
         <div class="col-md-6">
           {{ landing_form.name.label(class='form-label fw-semibold') }}
-          {{ landing_form.name(class='form-control', placeholder='Весна 2026 — Облачные решения') }}
+          {{ landing_form.name(class='form-control', placeholder='Получите демо облачной CRM') }}
+          <div class="form-text">Это название увидит клиент – пишите продающий заголовок</div>
         </div>
         <div class="col-md-6">
           {{ landing_form.slug.label(class='form-label fw-semibold') }}

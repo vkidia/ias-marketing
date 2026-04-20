@@ -2,7 +2,7 @@
 {% if pagination and pagination.pages > 1 %}
 {#
   Строим URL пагинации из текущих request.args,
-  просто заменяя параметр page — все фильтры сохраняются.
+  просто заменяя параметр page – все фильтры сохраняются.
 #}
 {% set base_args = request.args.to_dict() %}
 

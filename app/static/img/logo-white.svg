@@ -1,0 +1,18 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Буква М по центру -->
+  <text x="100" y="100"
+        text-anchor="middle"
+        dominant-baseline="central"
+        fill="#FFFFFF"
+        font-family="Arial, sans-serif"
+        font-size="96"
+        font-weight="700">М</text>
+
+  <!-- Дуга со стрелкой -->
+  <path fill="none"
+        d="M100 22C57.13 22 22 57.13 22 100C22 142.87 57.13 178 100 178C142.87 178 178 142.87 178 100
+           M178 100 L167 113
+           M178 100 L189 113"
+        stroke="#FFFFFF" stroke-width="10"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

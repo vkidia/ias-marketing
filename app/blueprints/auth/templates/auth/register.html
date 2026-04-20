@@ -1,12 +1,16 @@
 {% extends 'base.html' %}
-{% block title %}Регистрация — МаркетПульс{% endblock %}
+{% block title %}Регистрация – МаркетПульс{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center mt-5">
   <div class="col-md-6 col-lg-5">
     <div class="card shadow-sm border-0">
       <div class="card-body p-4">
-        <h4 class="card-title mb-1 fw-bold">Регистрация</h4>
+        <div class="text-center mb-4">
+          <img src="{{ url_for('static', filename='img/logo-blue.svg') }}"
+               alt="МаркетПульс" width="56" height="56">
+          <h5 class="fw-bold mt-2 mb-0">Регистрация</h5>
+        </div>
 
         <form method="POST" novalidate>
           {{ form.hidden_tag() }}
