@@ -6,7 +6,7 @@ from app.blueprints.main import main_bp
 from app.extensions import db
 from app.models.campaign import Campaign
 from app.models.lead import Lead
-from app.utils.dss import compute_dss
+from app.utils.dss import compute_dss, collect_campaign_alerts
 
 
 @main_bp.route('/')
@@ -34,22 +34,12 @@ def dashboard():
     ) or 0
 
     all_campaigns = db.session.scalars(db.select(Campaign)).all()
-    roi_values = [c.roi for c in all_campaigns if c.roi is not None]
+    roi_by_id = {c.id: c.roi for c in all_campaigns if c.roi is not None}
+    roi_values = list(roi_by_id.values())
     avg_roi = round(sum(roi_values) / len(roi_values), 1) if roi_values else None
 
-    total_spent = sum(float(c.spent or 0) for c in all_campaigns)
     global_cr = round(converted / total_leads * 100, 1) if total_leads else None
-
-    b2g_count = db.session.scalar(
-        db.select(func.count(Lead.id)).where(Lead.client_type == 'b2g')
-    ) or 0
-
-    bad_campaigns = [
-        c for c in all_campaigns
-        if c.status == 'active'
-        and c.roi is not None and c.roi < 0
-        and c.budget and float(c.spent or 0) > float(c.budget) * 0.5
-    ]
+    campaign_alerts = collect_campaign_alerts(all_campaigns, roi_by_id)
 
     dss = compute_dss(
         funnel=funnel,
@@ -57,8 +47,7 @@ def dashboard():
         avg_roi=avg_roi,
         active_campaigns=active_campaigns,
         global_cr=global_cr,
-        b2g_count=b2g_count,
-        bad_campaigns=bad_campaigns,
+        campaign_alerts=campaign_alerts,
     )
 
     return render_template(

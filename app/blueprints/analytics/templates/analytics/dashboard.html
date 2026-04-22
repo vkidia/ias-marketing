@@ -4,15 +4,54 @@
 {% block content %}
 
 {# ── Заголовок ── #}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
   <h2 class="mb-0">
     <i class="bi bi-bar-chart-line text-primary me-2"></i>Аналитика
   </h2>
-  {% if current_user.role in ('admin', 'marketing') %}
-  <a href="{{ url_for('analytics.export_excel') }}" class="btn btn-success btn-sm">
-    <i class="bi bi-file-earmark-excel me-1"></i>Скачать Excel
-  </a>
-  {% endif %}
+  <div class="d-flex align-items-center gap-2 flex-wrap">
+    {# Выпадающий список кампаний с мультивыбором #}
+    <div class="dropdown">
+      <button class="btn btn-outline-secondary btn-sm dropdown-toggle"
+              type="button"
+              id="campaignDropdownBtn"
+              data-bs-toggle="dropdown"
+              data-bs-auto-close="outside"
+              aria-expanded="false"
+              style="min-width:220px; text-align:left">
+        Все кампании
+      </button>
+      <ul class="dropdown-menu shadow-sm" id="campaignDropdownMenu"
+          style="min-width:280px; max-height:300px; overflow-y:auto">
+        <li>
+          <button class="dropdown-item text-secondary py-1 d-flex align-items-center gap-2"
+                  id="resetCampaignFilter" type="button">
+            <i class="bi bi-x-circle"></i>Все кампании (сбросить)
+          </button>
+        </li>
+        <li><hr class="dropdown-divider my-1"></li>
+        {% for c in selector_campaigns %}
+        <li>
+          <label class="dropdown-item d-flex align-items-center gap-2 py-1" style="cursor:pointer">
+            <input type="checkbox" class="form-check-input campaign-check flex-shrink-0"
+                   value="{{ c.id }}" data-name="{{ c.name }}">
+            <span class="text-truncate small">{{ c.name }}</span>
+          </label>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    <button id="exportPdf" class="btn btn-outline-danger btn-sm">
+      <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+    </button>
+    {% if current_user.role in ('admin', 'marketing') %}
+    <a id="excelBtn"
+       href="{{ url_for('analytics.export_excel') }}"
+       data-base-url="{{ url_for('analytics.export_excel') }}"
+       class="btn btn-success btn-sm">
+      <i class="bi bi-file-earmark-excel me-1"></i>Excel
+    </a>
+    {% endif %}
+  </div>
 </div>
 
 {# ── KPI карточки ── #}
@@ -22,7 +61,7 @@
       <div class="card-body d-flex justify-content-between align-items-center py-3">
         <div>
           <div class="text-muted small mb-1">Всего лидов</div>
-          <div class="kpi-value">{{ total_leads }}</div>
+          <div class="kpi-value" id="kpi-total-leads">{{ total_leads }}</div>
         </div>
         <i class="bi bi-people-fill kpi-icon"></i>
       </div>
@@ -33,7 +72,7 @@
       <div class="card-body d-flex justify-content-between align-items-center py-3">
         <div>
           <div class="text-muted small mb-1">Конвертировано</div>
-          <div class="kpi-value">{{ converted }}</div>
+          <div class="kpi-value" id="kpi-converted">{{ converted }}</div>
         </div>
         <i class="bi bi-check-circle-fill kpi-icon"></i>
       </div>
@@ -44,7 +83,7 @@
       <div class="card-body d-flex justify-content-between align-items-center py-3">
         <div>
           <div class="text-muted small mb-1">Конверсия</div>
-          <div class="kpi-value">
+          <div class="kpi-value" id="kpi-cr">
             {% if global_cr is not none %}{{ global_cr }}%{% else %}–{% endif %}
           </div>
           <div class="text-muted small mt-1">лидов → сделка</div>
@@ -58,7 +97,7 @@
       <div class="card-body d-flex justify-content-between align-items-center py-3">
         <div>
           <div class="text-muted small mb-1">Активных кампаний</div>
-          <div class="kpi-value">{{ active_campaigns }}</div>
+          <div class="kpi-value" id="kpi-active">{{ active_campaigns }}</div>
         </div>
         <i class="bi bi-megaphone-fill kpi-icon"></i>
       </div>
@@ -69,7 +108,7 @@
       <div class="card-body d-flex justify-content-between align-items-center py-3">
         <div>
           <div class="text-muted small mb-1">Средний ROI</div>
-          <div class="kpi-value">
+          <div class="kpi-value" id="kpi-roi">
             {% if avg_roi is not none %}{{ avg_roi }}%{% else %}–{% endif %}
           </div>
         </div>
@@ -82,7 +121,7 @@
       <div class="card-body d-flex justify-content-between align-items-center py-3">
         <div>
           <div class="text-muted small mb-1">Средний CPL</div>
-          <div class="kpi-value">
+          <div class="kpi-value" id="kpi-cpl">
             {% if global_cpl is not none %}{{ global_cpl }} ₽{% else %}–{% endif %}
           </div>
           <div class="text-muted small mt-1">стоимость лида</div>
@@ -119,7 +158,7 @@
 {# Открыт по умолчанию, если есть хоть одна warning или danger #}
 {% set _open = _max_lvl.val >= 2 %}
 
-<div class="card mb-4 border-start border-3 {{ _hborder }}">
+<div class="card mb-4 border-start border-3 {{ _hborder }}" id="dssCard">
   <div class="card-header py-2 d-flex justify-content-between align-items-center {{ 'collapsed' if not _open }}"
        role="button"
        data-bs-toggle="collapse"
@@ -128,11 +167,12 @@
        aria-controls="dssPanel"
        style="cursor: pointer;">
     <span class="fw-semibold d-flex align-items-center gap-2">
-      <i class="bi {{ _hicon }}"></i>
+      <i class="bi {{ _hicon }}" id="dssHeaderIcon"></i>
       Рекомендации системы
     </span>
     <span class="d-flex align-items-center gap-2">
-      <span class="badge {{ _hbadge }} text-{{ 'dark' if _max_lvl.name == 'warning' else 'white' }} rounded-pill">
+      <span class="badge {{ _hbadge }} text-{{ 'dark' if _max_lvl.name == 'warning' else 'white' }} rounded-pill"
+            id="dssBadge">
         {{ dss | length }}
       </span>
       <i class="bi bi-chevron-down collapse-chevron"></i>
@@ -140,7 +180,7 @@
   </div>
   <div class="collapse {{ 'show' if _open }}" id="dssPanel">
     <div class="card-body p-2">
-      <div class="row g-2">
+      <div class="row g-2" id="dssItems">
         {% for rec in dss %}
         {% set _row_map = {
           'success': ('border-success',  'text-success-emphasis',  'bg-success-subtle'),
@@ -200,7 +240,7 @@
 <p class="section-title"><i class="bi bi-diagram-3 me-1"></i>Сегментация</p>
 <div class="row g-3 mb-4">
 
-  <div class="col-md-4 col-lg-3">
+  <div class="col-md-4 col-lg-4">
     <div class="card h-100">
       <div class="card-header py-2">
         <span class="fw-semibold">
@@ -213,7 +253,7 @@
     </div>
   </div>
 
-  <div class="col-md-4 col-lg-3">
+  <div class="col-md-8 col-lg-8">
     <div class="card h-100">
       <div class="card-header py-2">
         <span class="fw-semibold">
@@ -221,68 +261,67 @@
         </span>
       </div>
       <div class="card-body d-flex align-items-center justify-content-center chart-wrap-sm">
-        {% if channel_labels %}
-          <canvas id="channelChart"></canvas>
-        {% else %}
-          <p class="text-muted small mb-0 text-center">
-            Нет данных – привяжите лиды<br>к кампаниям с каналом.
-          </p>
-        {% endif %}
+        <canvas id="channelChart" {% if not chart_data.channel_labels %}style="display:none"{% endif %}></canvas>
+        <p id="channelNoData" class="text-muted small mb-0 text-center"
+           {% if chart_data.channel_labels %}style="display:none"{% endif %}>
+          Нет данных – привяжите лиды<br>к кампаниям с каналом.
+        </p>
       </div>
     </div>
   </div>
 
-  <div class="col-md-4 col-lg-6">
-    <div class="card h-100">
-      <div class="card-header py-2">
-        <span class="fw-semibold">
-          <i class="bi bi-trophy me-1 text-warning"></i>Топ-5 кампаний по конверсии
-        </span>
-      </div>
-      <div class="card-body p-0">
-        {% if top_campaigns %}
-        <table class="table table-sm table-hover mb-0 small">
-          <thead class="table-light">
-            <tr>
-              <th>Кампания</th>
-              <th class="text-end">Лидов</th>
-              <th class="text-end">Конверсия</th>
-              <th class="text-end">CPL</th>
-              <th class="text-end">ROI</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for c in top_campaigns %}
-            <tr>
-              <td>
-                <a href="{{ url_for('campaigns.detail', id=c.id) }}"
-                   class="text-decoration-none">{{ c.name }}</a>
-              </td>
-              <td class="text-end">{{ c.lead_count }}</td>
-              <td class="text-end">
-                <span class="badge bg-success">{{ c.conversion_rate }}%</span>
-              </td>
-              <td class="text-end">
-                {% if c.cpl %}{{ '%.0f'|format(c.cpl) }} ₽{% else %}–{% endif %}
-              </td>
-              <td class="text-end">
-                {% if c.roi is not none %}
-                  <span class="text-{{ 'success' if c.roi >= 0 else 'danger' }}">
-                    {{ c.roi }}%
-                  </span>
-                {% else %}–{% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-        {% else %}
-          <p class="text-muted p-3 mb-0 small">Нет кампаний с лидами.</p>
-        {% endif %}
-      </div>
-    </div>
-  </div>
+</div>
 
+{# ── Рейтинг кампаний ── #}
+<p class="section-title"><i class="bi bi-trophy me-1 text-warning"></i>Рейтинг кампаний</p>
+<div class="card mb-4" id="topCampaignsSection">
+  <div class="card-header py-2">
+    <span class="fw-semibold">
+      <i class="bi bi-trophy me-1 text-warning"></i>Топ-5 кампаний по конверсии
+    </span>
+  </div>
+  <div class="card-body p-0">
+    {% if top_campaigns %}
+    <table class="table table-sm table-hover mb-0 small">
+      <thead class="table-light">
+        <tr>
+          <th>Кампания</th>
+          <th class="text-end">Лидов</th>
+          <th class="text-end">Конверсия</th>
+          <th class="text-end">CPL</th>
+          <th class="text-end">ROI</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in top_campaigns %}
+        {% set s = campaign_stats[c.id] %}
+        <tr>
+          <td>
+            <a href="{{ url_for('campaigns.detail', id=c.id) }}"
+               class="text-decoration-none">{{ c.name }}</a>
+          </td>
+          <td class="text-end">{{ s.lead_count }}</td>
+          <td class="text-end">
+            <span class="badge bg-success">{{ s.conversion_rate }}%</span>
+          </td>
+          <td class="text-end">
+            {% if s.cpl %}{{ '%.0f'|format(s.cpl) }} ₽{% else %}–{% endif %}
+          </td>
+          <td class="text-end">
+            {% if s.roi is not none %}
+              <span class="text-{{ 'success' if s.roi >= 0 else 'danger' }}">
+                {{ s.roi }}%
+              </span>
+            {% else %}–{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <p class="text-muted p-3 mb-0 small">Нет кампаний с лидами.</p>
+    {% endif %}
+  </div>
 </div>
 
 {# ── Все кампании (сворачивается) ── #}
@@ -332,6 +371,7 @@
                 'completed':'Завершена','archived':'Архив'
             } %}
             {% for c in all_campaigns %}
+            {% set s = campaign_stats[c.id] %}
             <tr>
               <td>
                 <a href="{{ url_for('campaigns.detail', id=c.id) }}"
@@ -349,18 +389,18 @@
               <td class="text-end">
                 {% if c.spent %}{{ '%.0f'|format(c.spent|float) }} ₽{% else %}–{% endif %}
               </td>
-              <td class="text-end">{{ c.lead_count }}</td>
-              <td class="text-end">{{ c.conversion_rate }}%</td>
+              <td class="text-end">{{ s.lead_count }}</td>
+              <td class="text-end">{{ s.conversion_rate }}%</td>
               <td class="text-end">
-                {% if c.cpl %}{{ '%.0f'|format(c.cpl) }} ₽{% else %}–{% endif %}
+                {% if s.cpl %}{{ '%.0f'|format(s.cpl) }} ₽{% else %}–{% endif %}
               </td>
               <td class="text-end">
-                {% if c.revenue %}{{ '%.0f'|format(c.revenue|float) }} ₽{% else %}–{% endif %}
+                {% if s.revenue %}{{ '%.0f'|format(s.revenue) }} ₽{% else %}–{% endif %}
               </td>
               <td class="text-end">
-                {% if c.roi is not none %}
-                  <span class="fw-semibold text-{{ 'success' if c.roi >= 0 else 'danger' }}">
-                    {{ c.roi }}%
+                {% if s.roi is not none %}
+                  <span class="fw-semibold text-{{ 'success' if s.roi >= 0 else 'danger' }}">
+                    {{ s.roi }}%
                   </span>
                 {% else %}–{% endif %}
               </td>
@@ -380,115 +420,9 @@
 
 {% block scripts %}
 <script>
-(function () {
-  // ── данные из Python ──────────────────────────────────────────
-  const funnel        = {{ funnel | tojson }};
-  const monthlyLabels = {{ monthly_labels | tojson }};
-  const monthlyData   = {{ monthly_data | tojson }};
-  const channelLabels = {{ channel_labels | tojson }};
-  const channelData   = {{ channel_data | tojson }};
-  const b2bCount      = {{ b2b_count }};
-  const b2gCount      = {{ b2g_count }};
-
-  // Единая палитра
-  const P = {
-    blue:   '#0d6efd',
-    green:  '#198754',
-    cyan:   '#0dcaf0',
-    orange: '#fd7e14',
-    purple: '#6610f2',
-    red:    '#dc3545',
-    gray:   '#6c757d',
-    teal:   '#20c997',
-  };
-  const PALETTE = Object.values(P);
-
-  // ── Динамика по месяцам (line) ───────────────────────────────
-  new Chart(document.getElementById('monthlyChart'), {
-    type: 'line',
-    data: {
-      labels: monthlyLabels,
-      datasets: [{
-        label: 'Новых лидов',
-        data: monthlyData,
-        borderColor: P.blue,
-        backgroundColor: 'rgba(13,110,253,0.07)',
-        fill: true,
-        tension: 0.35,
-        pointRadius: 5,
-        pointHoverRadius: 7,
-        pointBackgroundColor: P.blue,
-      }],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
-    },
-  });
-
-  // ── Воронка (горизонтальный bar) ─────────────────────────────
-  new Chart(document.getElementById('funnelChart'), {
-    type: 'bar',
-    data: {
-      labels: ['Новый', 'Связались', 'Квалифицирован', 'Конвертирован', 'Потерян'],
-      datasets: [{
-        label: 'Лидов',
-        data: [
-          funnel.new, funnel.contacted, funnel.qualified,
-          funnel.converted, funnel.lost,
-        ],
-        backgroundColor: [P.gray, P.cyan, P.blue, P.green, P.red],
-        borderRadius: 4,
-      }],
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } },
-    },
-  });
-
-  // ── B2B / B2G (doughnut) ─────────────────────────────────────
-  new Chart(document.getElementById('typeChart'), {
-    type: 'doughnut',
-    data: {
-      labels: ['B2B', 'B2G'],
-      datasets: [{
-        data: [b2bCount, b2gCount],
-        backgroundColor: [P.blue, P.purple],
-        hoverOffset: 4,
-      }],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom' } },
-    },
-  });
-
-  // ── Каналы (doughnut) ────────────────────────────────────────
-  if (channelLabels.length > 0) {
-    new Chart(document.getElementById('channelChart'), {
-      type: 'doughnut',
-      data: {
-        labels: channelLabels,
-        datasets: [{
-          data: channelData,
-          backgroundColor: PALETTE.slice(0, channelLabels.length),
-          hoverOffset: 4,
-        }],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom' } },
-      },
-    });
-  }
-})();
+  window.ANALYTICS = { chartData: {{ chart_data | tojson }} };
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
 {% endblock %}
