@@ -13,12 +13,14 @@ from app.utils.decorators import role_required
 @login_required
 @role_required('admin')
 def users():
+    # ожидающие одобрения показываются отдельно вверху страницы
     pending_users = db.session.scalars(
         db.select(User)
         .where(User.is_approved == False)
         .order_by(User.created_at.asc())
     ).all()
 
+    # одобренные пользователи сортируются по роли, чтобы admin шёл первым
     all_users = db.session.scalars(
         db.select(User)
         .where(User.is_approved == True)
@@ -85,11 +87,13 @@ def reject(user_id):
 @role_required('admin')
 def change_role(user_id):
     user = db.session.get(User, user_id) or abort(404)
+    # нельзя сменить роль себе, иначе можно случайно лишить себя прав admin
     if user.id == current_user.id:
         flash('Нельзя изменить собственную роль.', 'warning')
         return redirect(url_for('admin.users'))
 
     new_role = request.form.get('role', '')
+    # проверяем что роль пришла валидная, а не произвольная строка из формы
     if new_role not in ROLES:
         flash('Недопустимая роль.', 'danger')
         return redirect(url_for('admin.users'))

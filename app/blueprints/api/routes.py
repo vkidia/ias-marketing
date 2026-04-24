@@ -5,7 +5,7 @@ from app.extensions import db
 from app.models.campaign import Campaign
 from app.models.landing import LandingPage
 from app.models.lead import Lead, LEAD_SOURCES
-from app.utils.scoring import update_lead_score
+from app.utils.scoring import update_lead_score, GOV_DOMAINS
 
 
 @api_bp.route('/health')
@@ -73,6 +73,12 @@ def create_lead():
     if client_type not in ('b2b', 'b2g'):
         client_type = 'b2b'
 
+    # автоопределение: если клиент не указал тип явно, но email с гос. домена
+    if client_type == 'b2b' and email:
+        domain = email.split('@')[-1].lower()
+        if any(domain.endswith(g) for g in GOV_DOMAINS):
+            client_type = 'b2g'
+
     lead = Lead(
         first_name   = first_name,
         last_name    = (data.get('last_name')  or '').strip() or None,
@@ -91,7 +97,8 @@ def create_lead():
     )
 
     db.session.add(lead)
-    db.session.flush()          # получаем id до commit, нужен для scoring (lazy campaign)
+    # flush без commit даёт лиду id и позволяет scoring загрузить связанную кампанию через lazy-load
+    db.session.flush()
     update_lead_score(lead)
     db.session.commit()
 

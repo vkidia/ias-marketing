@@ -1,6 +1,8 @@
-"""DSS (Decision Support System) — вычисление рекомендаций по ключевым показателям."""
+"""DSS (Decision Support System) вычисляет рекомендации по ключевым показателям."""
 
+# алерты показываем только если лидов достаточно, иначе статистика ненадёжна
 _MIN_LEADS = 5
+# порядок уровней для сортировки: сначала самые критичные
 _LEVEL_ORDER = {'danger': 0, 'warning': 1, 'info': 2, 'success': 3}
 
 
@@ -106,6 +108,7 @@ def compute_dss(funnel, total_leads, avg_roi, active_campaigns, global_cr, campa
             'text': 'Ключевые показатели в допустимых пределах. Продолжайте в том же духе!',
         })
     else:
+        # сортируем так чтобы danger шёл первым, success последним
         dss.sort(key=lambda r: _LEVEL_ORDER.get(r['level'], 2))
 
     return dss

@@ -17,12 +17,13 @@ def index():
 @main_bp.route('/dashboard')
 @login_required
 def dashboard():
-    # Воронка одним запросом
+    # воронка одним запросом вместо пяти отдельных count-запросов
     funnel_rows = db.session.execute(
         db.select(Lead.status, func.count(Lead.id).label('cnt'))
         .group_by(Lead.status)
     ).all()
     funnel = {r.status: r.cnt for r in funnel_rows}
+    # добавляем нулевые значения для статусов у которых нет лидов, чтобы шаблон не падал
     for s in ('new', 'contacted', 'qualified', 'converted', 'lost'):
         funnel.setdefault(s, 0)
 
@@ -34,6 +35,7 @@ def dashboard():
     ) or 0
 
     all_campaigns = db.session.scalars(db.select(Campaign)).all()
+    # roi считаем через свойство модели, пропускаем кампании без расходов (roi == None)
     roi_by_id = {c.id: c.roi for c in all_campaigns if c.roi is not None}
     roi_values = list(roi_by_id.values())
     avg_roi = round(sum(roi_values) / len(roi_values), 1) if roi_values else None

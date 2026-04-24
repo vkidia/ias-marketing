@@ -45,9 +45,11 @@
   let charts = {};
 
   function buildCharts(data) {
+    // уничтожаем старые инстансы перед перерисовкой, иначе Chart.js будет рисовать поверх
     Object.values(charts).forEach(c => c.destroy());
     charts = {};
 
+    // режим сравнения отличается тем что в данных несколько datasets вместо одного
     const isCompare = data.mode === 'compare';
 
     // Линейный — динамика лидов (один dataset или несколько для сравнения)
@@ -173,6 +175,7 @@
     const items  = document.getElementById('dssItems');
     if (!card || !items) return;
 
+    // ищем наихудший уровень среди всех рекомендаций, чтобы покрасить карточку DSS
     let worst = 'success';
     dssData.forEach(r => {
       if ((LEVEL_ORDER[r.level] || 0) > (LEVEL_ORDER[worst] || 0)) worst = r.level;
@@ -202,6 +205,7 @@
     const collapseEl = document.getElementById('dssPanel');
     if (collapseEl && window.bootstrap) {
       const bsCol = bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false });
+      // автоматически раскрываем блок DSS если есть warning или danger
       if ((LEVEL_ORDER[worst] || 0) >= 2) bsCol.show();
     }
   }
@@ -302,6 +306,7 @@
 
   // ── PDF экспорт через html2canvas ────────────────────────────────────────
 
+  // экспорт аналитики в PDF через html2canvas + jsPDF, формат A4 горизонтальный
   async function exportPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('landscape', 'mm', 'a4');
@@ -322,7 +327,7 @@
     doc.setTextColor(160);
     doc.text(new Date().toLocaleDateString('ru-RU'), W - 10, 6, { align: 'right' });
 
-    // Подпись кампании(й) — рендерим через html2canvas для корректной кириллицы
+    // подпись кампании рендерим через html2canvas, иначе jsPDF плохо отображает кириллицу
     let pdfSubtitle = '';
     if (selectedIds.length === 1 && selectedNames.length > 0) {
       pdfSubtitle = selectedNames[0];
@@ -331,6 +336,7 @@
       pdfSubtitle = joined.length > 80 ? joined.slice(0, 77) + '…' : joined;
     }
     if (pdfSubtitle) {
+      // временный элемент вне экрана нужен только для снятия скриншота через html2canvas
       const tempEl = document.createElement('span');
       tempEl.style.cssText = 'position:fixed;top:-9999px;left:0;font-size:11px;color:#6c757d;font-family:system-ui,sans-serif;white-space:nowrap;';
       tempEl.textContent = pdfSubtitle;
@@ -370,7 +376,7 @@
           logging: false,
         });
       } catch (_) {
-        // fallback: raw canvas
+        // если html2canvas упал (например из-за CORS), берём raw canvas напрямую
         imgCanvas = canvas;
       }
 

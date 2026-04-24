@@ -35,6 +35,27 @@
   </div>
 </div>
 
+{# SLA-баннер: лиды в статусе 'new' дольше 24ч #}
+{# Для sales — только назначенные на них лиды (зона их ответственности) #}
+{% if current_user.role == 'sales' %}
+  {% set sla_leads = all_leads | selectattr('sla_breached') | selectattr('assigned_to', 'equalto', current_user.id) | list %}
+{% else %}
+  {% set sla_leads = all_leads | selectattr('sla_breached') | list %}
+{% endif %}
+{% set sla_count = sla_leads | count %}
+{% if sla_count > 0 %}
+<div class="alert alert-warning alert-dismissible fade show mb-3 d-flex align-items-center py-2" role="alert">
+  <div class="flex-grow-1">
+    <i class="bi bi-clock-history me-2"></i>
+    <strong>SLA нарушен:</strong> {{ sla_count }} {{ 'лид' if sla_count == 1 else 'лидов' }} не обработан{{ '' if sla_count == 1 else 'о' }} более 24 часов.
+    {% if current_status != 'new' %}
+      <a href="{{ url_for('leads.index', status='new') }}" class="alert-link ms-1">Показать</a>
+    {% endif %}
+  </div>
+  <button type="button" class="btn-close" data-bs-dismiss="alert" style="position:static; flex-shrink:0; margin-left:.75rem"></button>
+</div>
+{% endif %}
+
 {# Фильтры #}
 <form method="GET" class="row g-2 mb-3 align-items-end">
   <div class="col-md-3">

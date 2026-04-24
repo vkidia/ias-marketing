@@ -1,7 +1,9 @@
 from app.extensions import db
 from sqlalchemy import CheckConstraint, Index, Numeric
 
+# Возможные состояния кампании по жизненному циклу
 CAMPAIGN_STATUSES = ('draft', 'active', 'paused', 'completed', 'archived')
+# tender добавлен для B2G тендеров, остальные стандартные digital-каналы
 CAMPAIGN_CHANNELS = ('email', 'social', 'search', 'display', 'referral', 'tender', 'other')
 TARGET_AUDIENCES  = ('b2b', 'b2g', 'mixed')
 
@@ -59,6 +61,7 @@ class Campaign(db.Model):
 
     @property
     def lead_count(self):
+        # импорт внутри метода, чтобы избежать циклического импорта между моделями
         from app.models.lead import Lead
         return db.session.scalar(
             db.select(db.func.count(Lead.id)).where(Lead.campaign_id == self.id)
@@ -66,7 +69,7 @@ class Campaign(db.Model):
 
     @property
     def cpl(self):
-        """Cost per lead."""
+        """Cost per lead (стоимость одного лида). Возвращает None если нет расходов или лидов"""
         if self.lead_count and self.spent:
             return round(float(self.spent) / self.lead_count, 2)
         return None

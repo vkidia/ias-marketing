@@ -158,7 +158,8 @@ def edit(id):
     form = LeadForm(obj=lead)
     _fill_choices(form)
 
-    # SelectField хранит строки — приводим FK к строке при GET
+    # SelectField работает только со строками, а FK в модели это целые числа
+    # поэтому при GET-запросе приводим вручную, иначе выбранное значение не отображается
     if request.method == 'GET':
         form.campaign_id.data = str(lead.campaign_id) if lead.campaign_id else ''
         form.assigned_to.data = str(lead.assigned_to) if lead.assigned_to else ''
@@ -217,6 +218,7 @@ def import_csv():
     if form.validate_on_submit():
         f = form.csv_file.data
         try:
+            # utf-8-sig убирает BOM если файл сохранён через Excel
             stream = io.StringIO(f.stream.read().decode('utf-8-sig'))
         except UnicodeDecodeError:
             flash('Ошибка чтения файла. Сохраните CSV в кодировке UTF-8.', 'danger')

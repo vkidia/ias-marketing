@@ -17,6 +17,7 @@ RU_MONTHS = {
     7: 'Июл', 8: 'Авг', 9: 'Сен', 10: 'Окт', 11: 'Ноя', 12: 'Дек',
 }
 
+# лёгкая структура для хранения агрегированных метрик одной кампании
 CampaignStats = namedtuple(
     'CampaignStats',
     ['lead_count', 'converted_count', 'revenue', 'cpl', 'roi', 'conversion_rate'],
@@ -24,6 +25,8 @@ CampaignStats = namedtuple(
 
 
 def _last_n_months(n=6):
+    # возвращает список дат первых дней последних N месяцев в хронологическом порядке
+    # логика с while нужна чтобы корректно перейти через январь в предыдущий год
     today = datetime.date.today()
     months = []
     for i in range(n - 1, -1, -1):
@@ -159,6 +162,7 @@ def index():
     global_cpl = round(total_spent / total_leads) if total_leads else None
     global_cr = round(converted / total_leads * 100, 1) if total_leads else None
 
+    # топ 5 кампаний по конверсии, только те у которых есть хотя бы один лид
     top_campaigns = sorted(
         [c for c in all_campaigns if campaign_stats[c.id].lead_count > 0],
         key=lambda c: campaign_stats[c.id].conversion_rate,
@@ -408,7 +412,7 @@ def api_compare():
 
 @analytics_bp.route('/export/excel')
 @login_required
-@role_required('admin', 'marketing')
+@role_required('admin', 'marketing', 'sales', 'viewer')
 def export_excel():
     from app.utils.export import export_leads_excel
     from sqlalchemy.orm import joinedload

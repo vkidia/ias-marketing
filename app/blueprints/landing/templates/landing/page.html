@@ -95,9 +95,16 @@
             <label class="form-label fw-semibold">Компания</label>
             <input type="text" class="form-control" name="company" placeholder="ООО «Название»">
           </div>
-          <div class="mb-4">
+          <div class="mb-3">
             <label class="form-label fw-semibold">Должность</label>
             <input type="text" class="form-control" name="position" placeholder="Генеральный директор">
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Тип организации</label>
+            <select class="form-select" name="client_type">
+              <option value="b2b">Коммерческая</option>
+              <option value="b2g">Государственная / бюджетная</option>
+            </select>
           </div>
 
           <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold" id="submit-btn">

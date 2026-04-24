@@ -61,11 +61,13 @@
   </div>
 </div>
 
-{# DSS-рекомендации #}
+{# DSS-рекомендации от системы поддержки принятия решений #}
 {% if dss %}
 {% set _lvl_order = {'danger': 3, 'warning': 2, 'info': 1, 'success': 0} %}
+{# namespace нужен потому что в Jinja2 нельзя изменять переменные из внешнего блока внутри цикла #}
 {% set _max = namespace(val=0, name='success') %}
 {% for rec in dss %}
+  {# ищем наихудший уровень чтобы правильно покрасить карточку-контейнер #}
   {% if _lvl_order.get(rec.level, 0) > _max.val %}
     {% set _max.val  = _lvl_order.get(rec.level, 0) %}
     {% set _max.name = rec.level %}
@@ -141,6 +143,7 @@
               <td>
                 <div class="progress" style="height:14px">
                   {% set cnt = funnel.get(s, 0) %}
+                  {# ширина прогресс-бара в процентах от общего числа лидов #}
                   {% set pct = (cnt / total_leads * 100) | round(1) if total_leads else 0 %}
                   <div class="progress-bar bg-{{ status_colors[s] }}"
                        style="width:{{ pct }}%"></div>

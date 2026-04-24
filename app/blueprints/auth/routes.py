@@ -8,6 +8,7 @@ from app.models.user import User
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
+    # уже вошедших пользователей сразу отправляем на дашборд
     if current_user.is_authenticated:
         return redirect(url_for('main.dashboard'))
 
@@ -24,6 +25,8 @@ def login():
                 flash('Ваш аккаунт деактивирован. Обратитесь к администратору.', 'danger')
                 return redirect(url_for('auth.login'))
             login_user(user, remember=form.remember_me.data)
+            # если Flask-Login перенаправлял на страницу login из-за @login_required,
+            # то в ?next сохранён URL куда пользователь хотел попасть
             next_page = request.args.get('next')
             return redirect(next_page or url_for('main.dashboard'))
         flash('Неверный логин или пароль.', 'danger')

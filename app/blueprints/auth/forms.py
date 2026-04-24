@@ -28,6 +28,7 @@ class RegisterForm(FlaskForm):
     ])
     submit     = SubmitField('Зарегистрироваться')
 
+    # WTForms автоматически вызывает методы validate_<fieldname> как дополнительные валидаторы
     def validate_username(self, field):
         user = db.session.scalar(db.select(User).where(User.username == field.data))
         if user:

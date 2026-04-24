@@ -5,6 +5,7 @@ from openpyxl.utils import get_column_letter
 
 
 def _header_style():
+    # синий фон с белым жирным текстом для строки заголовка таблицы
     fill = PatternFill('solid', fgColor='2563EB')
     font = Font(bold=True, color='FFFFFF')
     align = Alignment(horizontal='center', vertical='center')
@@ -12,6 +13,7 @@ def _header_style():
 
 
 def _auto_width(ws, n_rows, n_cols, start_row=1):
+    # подбираем ширину каждой колонки под самое длинное значение, но не больше 40 символов
     for col in range(1, n_cols + 1):
         max_len = max(
             (len(str(ws.cell(row=r, column=col).value or ''))
@@ -136,6 +138,7 @@ def export_leads_excel(leads, campaigns, single_campaign_name=None):
 
         _auto_width(ws2, len(campaigns), len(camp_headers))
 
+    # сохраняем книгу в буфер в памяти и возвращаем его для отправки через send_file
     buf = io.BytesIO()
     wb.save(buf)
     buf.seek(0)

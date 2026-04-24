@@ -79,6 +79,11 @@
           <span class="badge bg-{{ status_colors.get(lead.status, 'secondary') }}">
             {{ status_labels.get(lead.status, lead.status) }}
           </span>
+          {% if lead.sla_breached %}
+          <span class="badge bg-danger ms-1" title="SLA нарушен: лид не обработан более 24 часов">
+            <i class="bi bi-clock-history"></i>
+          </span>
+          {% endif %}
         </td>
         <td>
           <div class="d-flex align-items-center gap-1">

@@ -7,6 +7,9 @@ LEAD_STATUSES = ('new', 'contacted', 'qualified', 'converted', 'lost')
 LEAD_SOURCES  = ('landing', 'form', 'import', 'manual')
 CLIENT_TYPES  = ('b2b', 'b2g')
 
+# Допустимые переходы между статусами воронки.
+# Ключ это текущий статус, значение это список статусов куда можно перейти.
+# converted и lost терминальные состояния, из них выйти нельзя.
 ALLOWED_TRANSITIONS = {
     'new':       ('contacted', 'lost'),
     'contacted': ('qualified', 'lost'),
@@ -123,29 +126,32 @@ class Lead(db.Model):
             comment=comment
         ))
 
-    # валидаторы 
+    # Валидаторы срабатывают автоматически при присвоении значения полю через SQLAlchemy
 
     @validates('email')
     def validate_email(self, key, value):
         if value and '@' not in value:
             raise ValueError(f'Некорректный email: {value}')
+        # приводим к нижнему регистру и убираем пробелы, чтобы дубли не проходили
         return value.lower().strip() if value else value
 
     @validates('inn')
     def validate_inn(self, key, value):
         if value:
             if not value.isdigit():
-                raise ValueError('ИНН — только цифры')
+                raise ValueError('ИНН только цифры')
             if len(value) not in (10, 12):
-                raise ValueError('ИНН — 10 или 12 цифр')
+                raise ValueError('ИНН 10 или 12 цифр')
         return value
 
     @validates('score')
     def validate_score(self, key, value):
+        # зажимаем score в диапазон 0..100, чтобы не получить отрицательные значения
         return max(0, min(100, int(value or 0)))
 
     @property
     def full_name(self):
+        # собираем имя из частей, пропуская None и пустые строки
         parts = [self.first_name, self.last_name]
         return ' '.join(p for p in parts if p)
 
@@ -157,6 +163,13 @@ class Lead(db.Model):
         if self.created_at:
             return (datetime.datetime.utcnow() - self.created_at).days
         return 0
+
+    @property
+    def sla_breached(self):
+        """True если лид в статусе 'new' больше 24 часов — не был обработан вовремя."""
+        if self.status == 'new' and self.created_at:
+            return (datetime.datetime.utcnow() - self.created_at).total_seconds() > 86400
+        return False
 
     def __repr__(self):
         return f'<Lead {self.first_name} {self.last_name or ""} [{self.status}]>'

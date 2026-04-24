@@ -90,7 +90,7 @@ def edit(id):
     form = CampaignForm(obj=campaign)
     if form.validate_on_submit():
         form.populate_obj(campaign)
-        # Пустые строки из SelectField → NULL
+        # SelectField возвращает пустую строку при сбросе выбора, приводим к NULL для БД
         campaign.channel         = campaign.channel         or None
         campaign.target_audience = campaign.target_audience or None
         campaign.utm_source      = campaign.utm_source      or None
@@ -142,7 +142,7 @@ def landing_create(id):
     form = LandingPageForm(prefix='lp')
     if form.validate_on_submit():
         slug = form.slug.data.strip().lower()
-        # проверка уникальности slug
+        # slug должен быть уникальным, потому что используется в URL лендинга
         existing = db.session.scalars(
             db.select(LandingPage).where(LandingPage.slug == slug)
         ).first()
