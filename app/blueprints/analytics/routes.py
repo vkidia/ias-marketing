@@ -10,7 +10,7 @@ from app.extensions import db
 from app.models.campaign import Campaign
 from app.models.lead import Lead
 from app.utils.decorators import role_required
-from app.utils.dss import compute_dss, compute_campaign_dss, collect_campaign_alerts
+from app.utils.dss import compute_dss, collect_campaign_alerts
 
 RU_MONTHS = {
     1: 'Янв', 2: 'Фев', 3: 'Мар', 4: 'Апр', 5: 'Май', 6: 'Июн',
@@ -55,6 +55,99 @@ def _aggregate_campaign_metrics():
         .group_by(Lead.campaign_id)
     ).all()
     return {r.campaign_id: r for r in rows}
+
+
+def _lead_health_stats(campaign_ids=None):
+    """
+    Один запрос: считает показатели здоровья лидов для DSS.
+    campaign_ids=None → по всем кампаниям.
+    Возвращает (sla_breach, stagnant_contacted, stagnant_qualified, unassigned, missing_amounts).
+    """
+    from app.utils.dss import _STAGNATION_DAYS
+    now = datetime.datetime.utcnow()
+    sla_cutoff          = now - datetime.timedelta(hours=24)
+    contacted_cutoff    = now - datetime.timedelta(days=_STAGNATION_DAYS['contacted'])
+    qualified_cutoff    = now - datetime.timedelta(days=_STAGNATION_DAYS['qualified'])
+
+    base = db.select(Lead.id, Lead.status, Lead.created_at, Lead.status_changed_at,
+                     Lead.assigned_to, Lead.deal_amount)
+    if campaign_ids is not None:
+        base = base.where(Lead.campaign_id.in_(campaign_ids))
+    else:
+        base = base.where(Lead.campaign_id.isnot(None))
+
+    rows = db.session.execute(base).all()
+
+    sla_breach = stagnant_c = stagnant_q = unassigned = missing_amounts = 0
+    for r in rows:
+        # SLA: в статусе 'new' дольше 24 часов
+        if r.status == 'new' and r.created_at and r.created_at < sla_cutoff:
+            sla_breach += 1
+
+        # Стагнация: contacted/qualified без движения N дней
+        last_change = r.status_changed_at or r.created_at
+        if r.status == 'contacted' and last_change and last_change < contacted_cutoff:
+            stagnant_c += 1
+        elif r.status == 'qualified' and last_change and last_change < qualified_cutoff:
+            stagnant_q += 1
+
+        # Нераспределённые активные лиды
+        if r.status not in ('converted', 'lost') and r.assigned_to is None:
+            unassigned += 1
+
+        # Конвертированные без суммы сделки
+        if r.status == 'converted' and (r.deal_amount is None or r.deal_amount == 0):
+            missing_amounts += 1
+
+    return sla_breach, stagnant_c, stagnant_q, unassigned, missing_amounts
+
+
+def _funnel_step_rates(campaign_ids=None):
+    """
+    Из lead_history считает реальные step-конверсии воронки.
+    Возвращает dict {'new_contacted': float, 'contacted_qualified': float,
+                     'qualified_converted': float} или пустой dict при нехватке данных.
+    """
+    from app.models.lead import LeadHistory
+
+    q = (
+        db.select(
+            LeadHistory.old_status,
+            LeadHistory.new_status,
+            func.count(LeadHistory.id).label('cnt'),
+        )
+        .join(Lead, Lead.id == LeadHistory.lead_id)
+        .group_by(LeadHistory.old_status, LeadHistory.new_status)
+    )
+    if campaign_ids is not None:
+        q = q.where(Lead.campaign_id.in_(campaign_ids))
+    else:
+        q = q.where(Lead.campaign_id.isnot(None))
+
+    rows = db.session.execute(q).all()
+
+    # строим матрицу переходов: {old: {new: count}}
+    transitions = {}
+    for r in rows:
+        transitions.setdefault(r.old_status, {})[r.new_status] = r.cnt
+
+    steps = {}
+    _MIN_TRANSITIONS = 5  # меньше — статистика ненадёжна
+
+    def _rate(from_status, to_status):
+        frm = transitions.get(from_status, {})
+        total = sum(frm.values())
+        if total < _MIN_TRANSITIONS:
+            return None
+        return round(frm.get(to_status, 0) / total, 3)
+
+    r1 = _rate('new',       'contacted')
+    r2 = _rate('contacted', 'qualified')
+    r3 = _rate('qualified', 'converted')
+    if r1 is not None: steps['new_contacted']       = r1
+    if r2 is not None: steps['contacted_qualified'] = r2
+    if r3 is not None: steps['qualified_converted'] = r3
+    return steps
 
 
 def _build_chart_data(campaign_id=None):
@@ -135,7 +228,8 @@ def index():
     # Метрики кампаний одним агрегирующим запросом
     raw_metrics = _aggregate_campaign_metrics()
     campaign_stats = {}
-    roi_values = []
+    total_spent = 0.0
+    total_revenue = 0.0
 
     for c in all_campaigns:
         m = raw_metrics.get(c.id)
@@ -154,13 +248,17 @@ def index():
             roi=roi,
             conversion_rate=conv_rate,
         )
-        if roi is not None:
-            roi_values.append(roi)
+        total_spent   += spent
+        total_revenue += revenue
 
-    avg_roi = round(sum(roi_values) / len(roi_values), 1) if roi_values else None
-    total_spent = sum(float(c.spent or 0) for c in all_campaigns)
+    # взвешенный ROI: (суммарная выручка - суммарные расходы) / расходы
+    avg_roi    = round((total_revenue - total_spent) / total_spent * 100, 1) if total_spent else None
     global_cpl = round(total_spent / total_leads) if total_leads else None
-    global_cr = round(converted / total_leads * 100, 1) if total_leads else None
+    global_cr  = round(converted / total_leads * 100, 1) if total_leads else None
+
+    b2b_count = chart_data.get('b2b_count', 0)
+    b2g_count = chart_data.get('b2g_count', 0)
+    b2g_ratio = round(b2g_count / (b2b_count + b2g_count), 3) if (b2b_count + b2g_count) else 0.0
 
     # топ 5 кампаний по конверсии, только те у которых есть хотя бы один лид
     top_campaigns = sorted(
@@ -172,13 +270,25 @@ def index():
     roi_by_id = {c.id: campaign_stats[c.id].roi for c in all_campaigns}
     campaign_alerts = collect_campaign_alerts(all_campaigns, roi_by_id)
 
+    sla, stagnant_c, stagnant_q, unassigned, missing_amounts = _lead_health_stats()
+    funnel_steps = _funnel_step_rates()
+
     dss = compute_dss(
+        mode='all',
         funnel=funnel,
         total_leads=total_leads,
-        avg_roi=avg_roi,
-        active_campaigns=active_campaigns,
-        global_cr=global_cr,
+        roi=avg_roi,
+        cr=global_cr,
+        active_count=active_campaigns,
+        campaign_count=len(all_campaigns),
         campaign_alerts=campaign_alerts,
+        b2g_ratio=b2g_ratio,
+        sla_breach=sla,
+        stagnant_contacted=stagnant_c,
+        stagnant_qualified=stagnant_q,
+        unassigned=unassigned,
+        missing_amounts=missing_amounts,
+        funnel_steps=funnel_steps,
     )
 
     # Список кампаний для селектора (только те, у которых есть лиды или активные)
@@ -227,13 +337,33 @@ def api_data(campaign_id=None):
         cr = round(converted / lead_count * 100, 1) if lead_count else 0.0
         cpl = round(spent / lead_count) if lead_count and spent else None
         roi = round((revenue - spent) / spent * 100, 1) if spent else None
-        dss = compute_campaign_dss(
+
+        b2b = chart_data.get('b2b_count', 0)
+        b2g = chart_data.get('b2g_count', 0)
+        b2g_ratio = round(b2g / (b2b + b2g), 3) if (b2b + b2g) else 0.0
+
+        today = datetime.date.today()
+        campaign_age_days = (today - campaign.start_date).days if campaign.start_date else None
+
+        sla, stagnant_c, stagnant_q, unassigned, missing_amounts = _lead_health_stats([campaign_id])
+        funnel_steps = _funnel_step_rates([campaign_id])
+
+        dss = compute_dss(
+            mode='single',
             funnel=funnel,
             total_leads=total_leads,
             roi=roi,
             cr=cr,
             spent=spent,
             budget=budget,
+            b2g_ratio=b2g_ratio,
+            campaign_age_days=campaign_age_days,
+            sla_breach=sla,
+            stagnant_contacted=stagnant_c,
+            stagnant_qualified=stagnant_q,
+            unassigned=unassigned,
+            missing_amounts=missing_amounts,
+            funnel_steps=funnel_steps,
         )
         metrics = {
             'total_leads': lead_count,
@@ -247,27 +377,45 @@ def api_data(campaign_id=None):
         all_campaigns = db.session.scalars(db.select(Campaign)).all()
         active_campaigns = sum(1 for c in all_campaigns if c.status == 'active')
         raw = _aggregate_campaign_metrics()
-        roi_values, total_spent, roi_by_id = [], 0.0, {}
+        total_spent = 0.0
+        total_revenue = 0.0
+        roi_by_id = {}
         for c in all_campaigns:
             m = raw.get(c.id)
             revenue = float(m.revenue) if m else 0.0
             spent = float(c.spent or 0)
-            total_spent += spent
+            total_spent   += spent
+            total_revenue += revenue
             if spent:
-                roi_c = round((revenue - spent) / spent * 100, 1)
-                roi_values.append(roi_c)
-                roi_by_id[c.id] = roi_c
+                roi_by_id[c.id] = round((revenue - spent) / spent * 100, 1)
         cr = round(converted / total_leads * 100, 1) if total_leads else None
-        avg_roi = round(sum(roi_values) / len(roi_values), 1) if roi_values else None
+        avg_roi    = round((total_revenue - total_spent) / total_spent * 100, 1) if total_spent else None
         global_cpl = round(total_spent / total_leads) if total_leads else None
+
+        b2b = chart_data.get('b2b_count', 0)
+        b2g = chart_data.get('b2g_count', 0)
+        b2g_ratio = round(b2g / (b2b + b2g), 3) if (b2b + b2g) else 0.0
+
         campaign_alerts = collect_campaign_alerts(all_campaigns, roi_by_id)
+        sla, stagnant_c, stagnant_q, unassigned, missing_amounts = _lead_health_stats()
+        funnel_steps = _funnel_step_rates()
+
         dss = compute_dss(
+            mode='all',
             funnel=funnel,
             total_leads=total_leads,
-            avg_roi=avg_roi,
-            active_campaigns=active_campaigns,
-            global_cr=cr,
+            roi=avg_roi,
+            cr=cr,
+            active_count=active_campaigns,
+            campaign_count=len(all_campaigns),
             campaign_alerts=campaign_alerts,
+            b2g_ratio=b2g_ratio,
+            sla_breach=sla,
+            stagnant_contacted=stagnant_c,
+            stagnant_qualified=stagnant_q,
+            unassigned=unassigned,
+            missing_amounts=missing_amounts,
+            funnel_steps=funnel_steps,
         )
         metrics = {
             'total_leads': total_leads,
@@ -363,29 +511,46 @@ def api_compare():
     cr = round(converted / total_leads * 100, 1) if total_leads else None
 
     raw = _aggregate_campaign_metrics()
-    roi_values, total_spent, roi_by_id = [], 0.0, {}
+    total_spent = 0.0
+    total_revenue = 0.0
+    roi_by_id = {}
     for c in campaigns_selected:
         m = raw.get(c.id)
         revenue = float(m.revenue) if m else 0.0
         spent = float(c.spent or 0)
-        total_spent += spent
+        total_spent   += spent
+        total_revenue += revenue
         if spent:
-            roi_c = round((revenue - spent) / spent * 100, 1)
-            roi_values.append(roi_c)
-            roi_by_id[c.id] = roi_c
+            roi_by_id[c.id] = round((revenue - spent) / spent * 100, 1)
 
-    avg_roi = round(sum(roi_values) / len(roi_values), 1) if roi_values else None
+    avg_roi    = round((total_revenue - total_spent) / total_spent * 100, 1) if total_spent else None
     global_cpl = round(total_spent / total_leads) if total_leads and total_spent else None
-    active_campaigns = sum(1 for c in campaigns_selected if c.status == 'active')
+    active_count = sum(1 for c in campaigns_selected if c.status == 'active')
+
+    b2b = type_dict.get('b2b', 0)
+    b2g = type_dict.get('b2g', 0)
+    b2g_ratio = round(b2g / (b2b + b2g), 3) if (b2b + b2g) else 0.0
+
     campaign_alerts = collect_campaign_alerts(campaigns_selected, roi_by_id)
+    sla, stagnant_c, stagnant_q, unassigned, missing_amounts = _lead_health_stats(campaign_ids)
+    funnel_steps = _funnel_step_rates(campaign_ids)
 
     dss = compute_dss(
+        mode='group',
         funnel=funnel,
         total_leads=total_leads,
-        avg_roi=avg_roi,
-        active_campaigns=active_campaigns,
-        global_cr=cr,
+        roi=avg_roi,
+        cr=cr,
+        active_count=active_count,
+        campaign_count=len(campaigns_selected),
         campaign_alerts=campaign_alerts,
+        b2g_ratio=b2g_ratio,
+        sla_breach=sla,
+        stagnant_contacted=stagnant_c,
+        stagnant_qualified=stagnant_q,
+        unassigned=unassigned,
+        missing_amounts=missing_amounts,
+        funnel_steps=funnel_steps,
     )
     metrics = {
         'total_leads': total_leads,
@@ -393,7 +558,7 @@ def api_compare():
         'cr': cr,
         'roi': avg_roi,
         'cpl': int(global_cpl) if global_cpl else None,
-        'active_campaigns': active_campaigns,
+        'active_campaigns': active_count,
     }
 
     return jsonify({

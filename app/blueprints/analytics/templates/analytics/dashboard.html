@@ -188,7 +188,7 @@
         } %}
         {% set _rborder, _rtext, _rbg = _row_map.get(rec.level, _row_map['info']) %}
         <div class="col-12 col-md-6">
-          <div class="d-flex align-items-start gap-2 p-2 rounded border-start border-3 {{ _rborder }} {{ _rbg }}">
+          <div class="d-flex align-items-start gap-2 p-2 rounded border-start border-3 {{ _rborder }} {{ _rbg }} h-100">
             <i class="bi {{ rec.icon }} {{ _rtext }} mt-1 flex-shrink-0"></i>
             <div>
               <div class="fw-semibold small {{ _rtext }}">{{ rec.title }}</div>

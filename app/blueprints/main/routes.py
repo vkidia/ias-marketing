@@ -35,20 +35,30 @@ def dashboard():
     ) or 0
 
     all_campaigns = db.session.scalars(db.select(Campaign)).all()
-    # roi считаем через свойство модели, пропускаем кампании без расходов (roi == None)
-    roi_by_id = {c.id: c.roi for c in all_campaigns if c.roi is not None}
-    roi_values = list(roi_by_id.values())
-    avg_roi = round(sum(roi_values) / len(roi_values), 1) if roi_values else None
+
+    # взвешенный ROI: суммарная выручка минус суммарные расходы / расходы
+    total_spent = total_revenue = 0.0
+    roi_by_id = {}
+    for c in all_campaigns:
+        spent   = float(c.spent or 0)
+        revenue = float(c.revenue or 0)
+        total_spent   += spent
+        total_revenue += revenue
+        if spent:
+            roi_by_id[c.id] = round((revenue - spent) / spent * 100, 1)
+    avg_roi = round((total_revenue - total_spent) / total_spent * 100, 1) if total_spent else None
 
     global_cr = round(converted / total_leads * 100, 1) if total_leads else None
     campaign_alerts = collect_campaign_alerts(all_campaigns, roi_by_id)
 
     dss = compute_dss(
+        mode='all',
         funnel=funnel,
         total_leads=total_leads,
-        avg_roi=avg_roi,
-        active_campaigns=active_campaigns,
-        global_cr=global_cr,
+        roi=avg_roi,
+        cr=global_cr,
+        active_count=active_campaigns,
+        campaign_count=len(all_campaigns),
         campaign_alerts=campaign_alerts,
     )
 
