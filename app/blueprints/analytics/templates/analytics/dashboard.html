@@ -10,31 +10,31 @@
   </h2>
   <div class="d-flex align-items-center gap-2 flex-wrap">
     {# Выпадающий список кампаний с мультивыбором #}
-    <div class="dropdown">
+    <div class="dropdown" id="campaignDropdownWrapper">
       <button class="btn btn-outline-secondary btn-sm dropdown-toggle"
               type="button"
               id="campaignDropdownBtn"
               data-bs-toggle="dropdown"
               data-bs-auto-close="outside"
               aria-expanded="false"
-              style="min-width:220px; text-align:left">
+              style="min-width:clamp(0px, 220px, 100%); text-align:left">
         Все кампании
       </button>
       <ul class="dropdown-menu shadow-sm" id="campaignDropdownMenu"
-          style="min-width:280px; max-height:300px; overflow-y:auto">
+          style="min-width:320px; max-height:300px; overflow-y:auto; max-width:calc(100vw - 2rem)">
         <li>
           <button class="dropdown-item text-secondary py-1 d-flex align-items-center gap-2"
-                  id="resetCampaignFilter" type="button">
+                  id="resetCampaignFilter" type="button" style="white-space:normal">
             <i class="bi bi-x-circle"></i>Все кампании (сбросить)
           </button>
         </li>
         <li><hr class="dropdown-divider my-1"></li>
         {% for c in selector_campaigns %}
         <li>
-          <label class="dropdown-item d-flex align-items-center gap-2 py-1" style="cursor:pointer">
+          <label class="dropdown-item d-flex align-items-center gap-2 py-1" style="cursor:pointer; white-space:normal">
             <input type="checkbox" class="form-check-input campaign-check flex-shrink-0"
                    value="{{ c.id }}" data-name="{{ c.name }}">
-            <span class="text-truncate small">{{ c.name }}</span>
+            <span class="small" style="word-break:break-word">{{ c.name }}</span>
           </label>
         </li>
         {% endfor %}
@@ -280,14 +280,15 @@
   </div>
   <div class="card-body p-0">
     {% if top_campaigns %}
+    <div class="table-responsive">
     <table class="table table-sm table-hover mb-0 small">
       <thead class="table-light">
         <tr>
-          <th>Кампания</th>
-          <th class="text-end">Лидов</th>
-          <th class="text-end">Конверсия</th>
-          <th class="text-end">CPL</th>
-          <th class="text-end">ROI</th>
+          <th style="min-width:150px">Кампания</th>
+          <th class="text-end text-nowrap" style="min-width:55px">Лидов</th>
+          <th class="text-end text-nowrap" style="min-width:85px">Конверсия</th>
+          <th class="text-end text-nowrap" style="min-width:80px">CPL</th>
+          <th class="text-end text-nowrap" style="min-width:60px">ROI</th>
         </tr>
       </thead>
       <tbody>
@@ -298,14 +299,14 @@
             <a href="{{ url_for('campaigns.detail', id=c.id) }}"
                class="text-decoration-none">{{ c.name }}</a>
           </td>
-          <td class="text-end">{{ s.lead_count }}</td>
-          <td class="text-end">
+          <td class="text-end text-nowrap">{{ s.lead_count }}</td>
+          <td class="text-end text-nowrap">
             <span class="badge bg-success">{{ s.conversion_rate }}%</span>
           </td>
-          <td class="text-end">
+          <td class="text-end text-nowrap">
             {% if s.cpl %}{{ '%.0f'|format(s.cpl) }} ₽{% else %}–{% endif %}
           </td>
-          <td class="text-end">
+          <td class="text-end text-nowrap">
             {% if s.roi is not none %}
               <span class="text-{{ 'success' if s.roi >= 0 else 'danger' }}">
                 {{ s.roi }}%
@@ -316,6 +317,7 @@
         {% endfor %}
       </tbody>
     </table>
+    </div>
     {% else %}
       <p class="text-muted p-3 mb-0 small">Нет кампаний с лидами.</p>
     {% endif %}
@@ -347,16 +349,16 @@
         <table class="table table-sm table-hover mb-0 small">
           <thead class="table-light">
             <tr>
-              <th>Название</th>
-              <th>Статус</th>
-              <th>Канал</th>
-              <th class="text-end">Бюджет</th>
-              <th class="text-end">Потрачено</th>
-              <th class="text-end">Лидов</th>
-              <th class="text-end">Конверсия</th>
-              <th class="text-end">CPL</th>
-              <th class="text-end">Выручка</th>
-              <th class="text-end">ROI</th>
+              <th style="min-width:150px">Название</th>
+              <th style="min-width:85px">Статус</th>
+              <th style="min-width:80px">Канал</th>
+              <th class="text-end text-nowrap" style="min-width:90px">Бюджет</th>
+              <th class="text-end text-nowrap" style="min-width:90px">Потрачено</th>
+              <th class="text-end" style="min-width:55px">Лидов</th>
+              <th class="text-end text-nowrap" style="min-width:80px">Конверсия</th>
+              <th class="text-end text-nowrap" style="min-width:70px">CPL</th>
+              <th class="text-end text-nowrap" style="min-width:80px">Выручка</th>
+              <th class="text-end" style="min-width:55px">ROI</th>
             </tr>
           </thead>
           <tbody>
@@ -381,21 +383,21 @@
                 </span>
               </td>
               <td>{{ c.channel or '–' }}</td>
-              <td class="text-end">
+              <td class="text-end text-nowrap">
                 {% if c.budget %}{{ '%.0f'|format(c.budget|float) }} ₽{% else %}–{% endif %}
               </td>
-              <td class="text-end">
+              <td class="text-end text-nowrap">
                 {% if c.spent %}{{ '%.0f'|format(c.spent|float) }} ₽{% else %}–{% endif %}
               </td>
               <td class="text-end">{{ s.lead_count }}</td>
-              <td class="text-end">{{ s.conversion_rate }}%</td>
-              <td class="text-end">
+              <td class="text-end text-nowrap">{{ s.conversion_rate }}%</td>
+              <td class="text-end text-nowrap">
                 {% if s.cpl %}{{ '%.0f'|format(s.cpl) }} ₽{% else %}–{% endif %}
               </td>
-              <td class="text-end">
+              <td class="text-end text-nowrap">
                 {% if s.revenue %}{{ '%.0f'|format(s.revenue) }} ₽{% else %}–{% endif %}
               </td>
-              <td class="text-end">
+              <td class="text-end text-nowrap">
                 {% if s.roi is not none %}
                   <span class="fw-semibold text-{{ 'success' if s.roi >= 0 else 'danger' }}">
                     {{ s.roi }}%

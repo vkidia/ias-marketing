@@ -7,7 +7,7 @@
 {% set channel_labels = {'email': 'Email', 'social': 'Соцсети', 'search': 'Поиск', 'display': 'Медийная', 'referral': 'Реферальный', 'tender': 'Тендер', 'other': 'Другое'} %}
 {% set badge_colors   = {'draft': 'secondary', 'active': 'success', 'paused': 'warning', 'completed': 'primary', 'archived': 'dark'} %}
 
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
   <h2 class="mb-0"><i class="bi bi-megaphone text-primary me-2"></i>Кампании</h2>
   {% if current_user.role in ('admin', 'marketing') %}
     <a href="{{ url_for('campaigns.create') }}" class="btn btn-primary">
@@ -17,7 +17,7 @@
 </div>
 
 {# Фильтры #}
-<form method="GET" class="row g-2 mb-3">
+<form method="GET" class="row g-2 mb-3 filters-row">
   <div class="col-auto">
     <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
       <option value="">Все статусы</option>
@@ -65,40 +65,29 @@
 {# Таблица #}
 {% if campaigns %}
 <div class="table-responsive">
-  <table class="table table-hover align-middle" style="table-layout:fixed">
-    <colgroup>
-      <col style="width:28%">
-      <col style="width:110px">
-      <col style="width:100px">
-      <col style="width:100px">
-      <col style="width:60px">
-      <col style="width:100px">
-      <col style="width:100px">
-      <col style="width:160px">
-      <col style="width:44px">
-    </colgroup>
+  <table class="table table-hover align-middle">
     <thead class="table-light">
       <tr>
-        <th>Название</th>
-        <th>Статус</th>
-        <th>Канал</th>
-        <th>Аудитория</th>
-        <th class="text-center">Лиды</th>
-        <th class="text-end">Бюджет</th>
-        <th class="text-end">Потрачено</th>
-        <th class="text-center">Период</th>
-        <th></th>
+        <th style="min-width:180px">Название</th>
+        <th style="min-width:110px">Статус</th>
+        <th style="min-width:90px">Канал</th>
+        <th style="min-width:100px">Аудитория</th>
+        <th class="text-center" style="min-width:55px">Лиды</th>
+        <th class="text-end" style="min-width:90px">Бюджет</th>
+        <th class="text-end" style="min-width:90px">Потрачено</th>
+        <th class="text-center" style="min-width:150px">Период</th>
+        <th style="min-width:44px"></th>
       </tr>
     </thead>
     <tbody>
       {% for c in campaigns %}
       <tr>
-        <td class="text-truncate">
+        <td>
           <a href="{{ url_for('campaigns.detail', id=c.id) }}" class="fw-semibold text-decoration-none">
             {{ c.name }}
           </a>
           {% if c.description %}
-            <div class="text-muted small text-truncate">{{ c.description }}</div>
+            <div class="text-muted small">{{ c.description }}</div>
           {% endif %}
         </td>
         <td>

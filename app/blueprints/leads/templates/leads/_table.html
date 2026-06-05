@@ -15,29 +15,18 @@
 
 {% if leads %}
 <div class="table-responsive">
-  <table class="table table-hover align-middle" id="leads-table" style="table-layout:fixed">
-    <colgroup>
-      <col style="width:22%">
-      <col style="width:18%">
-      <col style="width:55px">
-      <col style="width:18%">
-      <col style="width:120px">
-      <col style="width:110px">
-      <col style="width:120px">
-      <col style="width:90px">
-      <col style="width:44px">
-    </colgroup>
+  <table class="table table-hover align-middle" id="leads-table">
     <thead class="table-light">
       <tr>
-        <th>Имя / Организация</th>
-        <th>Email</th>
-        <th>Тип</th>
-        <th>Кампания</th>
-        <th>Статус</th>
-        <th class="text-center">Score</th>
-        <th>Ответственный</th>
-        <th class="text-muted small">Создан</th>
-        <th></th>
+        <th style="min-width:160px">Имя / Организация</th>
+        <th style="min-width:150px">Email</th>
+        <th style="min-width:55px">Тип</th>
+        <th style="min-width:130px">Кампания</th>
+        <th style="min-width:120px">Статус</th>
+        <th class="text-center" style="min-width:100px">Score</th>
+        <th style="min-width:120px">Ответственный</th>
+        <th class="text-muted small" style="min-width:85px">Создан</th>
+        <th style="min-width:44px"></th>
       </tr>
     </thead>
     <tbody>
@@ -55,8 +44,8 @@
             </div>
           {% endif %}
         </td>
-        <td class="text-truncate">
-          <a href="mailto:{{ lead.email }}" class="text-decoration-none small">
+        <td style="max-width:160px">
+          <a href="mailto:{{ lead.email }}" class="text-decoration-none small d-block text-truncate">
             {{ lead.email }}
           </a>
         </td>
@@ -65,10 +54,10 @@
             {{ lead.client_type.upper() }}
           </span>
         </td>
-        <td class="small text-truncate">
+        <td class="small" style="max-width:140px">
           {% if lead.campaign %}
             <a href="{{ url_for('campaigns.detail', id=lead.campaign_id) }}"
-               class="text-decoration-none text-muted">
+               class="text-decoration-none text-muted d-block text-truncate">
               {{ lead.campaign.name }}
             </a>
           {% else %}

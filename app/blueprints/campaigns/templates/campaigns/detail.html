@@ -8,7 +8,7 @@
 {% set lead_badge_colors = {'new': 'secondary', 'contacted': 'info', 'qualified': 'primary', 'converted': 'success', 'lost': 'danger'} %}
 
 {# Заголовок #}
-<div class="d-flex justify-content-between align-items-start mb-4">
+<div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
   <div>
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb mb-1">
@@ -73,11 +73,11 @@
     <div class="card text-center h-100 shadow-sm">
       <div class="card-body">
         {% if campaign.cpl is not none %}
-          <div class="fs-3 fw-bold text-success">{{ '%.0f'|format(campaign.cpl) }} ₽</div>
+          <div class="fs-3 fw-bold text-success text-nowrap">{{ '%.0f'|format(campaign.cpl) }}&nbsp;₽</div>
         {% else %}
           <div class="fs-3 fw-bold text-muted">–</div>
         {% endif %}
-        <div class="text-muted small mt-1"><i class="bi bi-currency-dollar me-1"></i>CPL (стоимость лида)</div>
+        <div class="text-muted small mt-1"><i class="bi bi-currency-dollar me-1"></i>CPL</div>
       </div>
     </div>
   </div>
@@ -112,15 +112,15 @@
     <div class="row g-0 text-center">
       <div class="col-md-4 p-3 border-end">
         <div class="text-muted small mb-1"><i class="bi bi-wallet2 me-1"></i>Бюджет</div>
-        <div class="fw-semibold fs-5">{{ '%.2f ₽'|format(campaign.budget|float) if campaign.budget else '–' }}</div>
+        <div class="fw-semibold fs-5 text-nowrap">{% if campaign.budget %}{{ '%.0f'|format(campaign.budget|float) }}&nbsp;₽{% else %}–{% endif %}</div>
       </div>
       <div class="col-md-4 p-3 border-end">
         <div class="text-muted small mb-1"><i class="bi bi-cash-stack me-1"></i>Потрачено</div>
-        <div class="fw-semibold fs-5">{{ '%.2f ₽'|format(campaign.spent|float) if campaign.spent else '–' }}</div>
+        <div class="fw-semibold fs-5 text-nowrap">{% if campaign.spent %}{{ '%.0f'|format(campaign.spent|float) }}&nbsp;₽{% else %}–{% endif %}</div>
       </div>
       <div class="col-md-4 p-3">
         <div class="text-muted small mb-1"><i class="bi bi-bag-check me-1"></i>Выручка (сделки)</div>
-        <div class="fw-semibold fs-5 text-success">{{ '%.2f ₽'|format(campaign.revenue|float) }}</div>
+        <div class="fw-semibold fs-5 text-success text-nowrap">{{ '%.0f'|format(campaign.revenue|float) }}&nbsp;₽</div>
       </div>
     </div>
   </div>
@@ -187,14 +187,14 @@
   <table class="table table-sm table-hover align-middle">
     <thead class="table-light">
       <tr>
-        <th>Имя</th>
-        <th>Email</th>
-        <th>Компания</th>
-        <th>Тип</th>
-        <th>Статус</th>
-        <th class="text-center">Скор</th>
-        <th class="text-end">Сумма сделки</th>
-        <th>Создан</th>
+        <th style="min-width:120px">Имя</th>
+        <th style="min-width:150px">Email</th>
+        <th style="min-width:110px">Компания</th>
+        <th style="min-width:55px">Тип</th>
+        <th style="min-width:90px">Статус</th>
+        <th class="text-center" style="min-width:55px">Скор</th>
+        <th class="text-end text-nowrap" style="min-width:90px">Сумма сделки</th>
+        <th class="text-nowrap" style="min-width:85px">Создан</th>
       </tr>
     </thead>
     <tbody>
@@ -202,16 +202,18 @@
       <tr onclick="window.location='{{ url_for('leads.detail', id=lead.id) }}'" style="cursor:pointer">
 
         <td class="fw-semibold">{{ lead.first_name }} {{ lead.last_name or '' }}</td>
-        <td><a href="mailto:{{ lead.email }}" class="text-decoration-none">{{ lead.email }}</a></td>
+        <td style="max-width:160px">
+          <a href="mailto:{{ lead.email }}" class="text-decoration-none d-block text-truncate">{{ lead.email }}</a>
+        </td>
         <td>{{ lead.company or '–' }}</td>
         <td><span class="badge bg-light text-dark border small">{{ lead.client_type.upper() }}</span></td>
         <td>
-          <span class="badge bg-{{ lead_badge_colors.get(lead.status, 'secondary') }}">{{ lead.status }}</span>
+          <span class="badge bg-{{ lead_badge_colors.get(lead.status, 'secondary') }} text-nowrap">{{ lead.status }}</span>
         </td>
         <td class="text-center">
           <span class="badge bg-secondary">{{ lead.score }}</span>
         </td>
-        <td class="text-end">{{ '%.0f ₽'|format(lead.deal_amount|float) if lead.deal_amount else '–' }}</td>
+        <td class="text-end text-nowrap">{{ '%.0f ₽'|format(lead.deal_amount|float) if lead.deal_amount else '–' }}</td>
         <td class="text-nowrap small text-muted">
           {{ lead.created_at.strftime('%d.%m.%Y') if lead.created_at else '' }}
         </td>

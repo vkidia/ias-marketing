@@ -132,3 +132,50 @@ main {
   background: rgba(255, 255, 255, 0.7);
   border-radius: 2px;
 }
+
+/* ── Мобильная адаптация ─────────────────────────────────────────── */
+
+/* Разделители «бюджет / потрачено / выручка» на мобиле → нижняя граница */
+@media (max-width: 767.98px) {
+  .col-md-4.border-end {
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--mp-border) !important;
+  }
+  .col-md-4.border-end:last-child {
+    border-bottom: 0 !important;
+  }
+}
+
+@media (max-width: 575.98px) {
+  /* KPI-карточки: уменьшаем значения на маленьких экранах */
+  .kpi-card .kpi-value {
+    font-size: 1.4rem;
+  }
+  .kpi-card .kpi-icon {
+    font-size: 1.5rem;
+  }
+
+  /* Кнопка-фильтр кампаний в аналитике: враппер и кнопка на всю ширину */
+  #campaignDropdownWrapper {
+    width: 100%;
+  }
+  #campaignDropdownBtn {
+    min-width: 0 !important;
+    width: 100%;
+  }
+
+  /* Меню кампаний: ширина по экрану */
+  #campaignDropdownMenu {
+    min-width: 0 !important;
+    width: 100%;
+  }
+
+  /* Фильтры-поля занимают всю ширину на xs */
+  .filters-row .col-auto {
+    width: 100%;
+  }
+  .filters-row .col-auto .form-select,
+  .filters-row .col-auto .btn {
+    width: 100%;
+  }
+}

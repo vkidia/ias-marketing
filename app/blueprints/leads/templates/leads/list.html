@@ -19,9 +19,9 @@
 } %}
 
 {# Заголовок #}
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
   <h2 class="mb-0"><i class="bi bi-people text-primary me-2"></i>Лиды</h2>
-  <div class="d-flex gap-2">
+  <div class="d-flex gap-2 flex-wrap">
     {% if current_user.role in ('admin', 'marketing') %}
       <a href="{{ url_for('leads.import_csv') }}" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-upload me-1"></i>Импорт CSV
@@ -57,8 +57,8 @@
 {% endif %}
 
 {# Фильтры #}
-<form method="GET" class="row g-2 mb-3 align-items-end">
-  <div class="col-md-3">
+<form method="GET" class="row g-2 mb-3 align-items-end filters-row">
+  <div class="col-12 col-md-3">
     <input type="text" name="q" value="{{ search }}"
            class="form-control form-control-sm"
            placeholder="Поиск по имени, email, компании…">
